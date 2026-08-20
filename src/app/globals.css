@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+
+  /*
+   * DESIGN TOKENS
+   * Change these primitives to re-theme the entire product. Values are stored
+   * as RGB channels so Tailwind can add opacity (for example `bg-brand-600/10`).
+   * See docs/design-system.md for the usage rules and component anatomy.
+   */
+  /*
+   * OPEN FASHION → MEDINEXUS
+   * The 600 and accent values are sampled directly from the Figma colour
+   * guide. The surrounding steps are accessible interaction tints/shades.
+   */
+  --color-brand-50: 250 246 244;
+  --color-brand-100: 244 233 227;
+  --color-brand-200: 232 208 196;
+  --color-brand-300: 215 173 153;
+  --color-brand-400: 196 138 112;
+  --color-brand-500: 181 121 95;
+  --color-brand-600: 168 113 90;
+  --color-brand-700: 139 89 71;
+  --color-brand-800: 116 75 62;
+  --color-brand-900: 96 63 53;
+  --color-brand-950: 52 31 26;
+  --color-accent: 221 133 96;
+  --color-ink: 32 34 36;
+  --color-body: 51 51 51;
+  --color-muted: 85 85 85;
+  --color-placeholder: 136 136 136;
+  --color-surface: 255 255 255;
+  --color-canvas: 252 252 252;
+  --color-soft: 248 240 231;
+  --color-field: 249 249 249;
+  --color-line: 222 222 222;
+
+  --font-sans: "Tenor Sans", "Aptos", "Segoe UI", system-ui, sans-serif;
+  --font-display:
+    "Tenor Sans", "Aptos Display", "Segoe UI", system-ui, sans-serif;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --shadow-card: 0 1px 2px rgb(32 34 36 / 0.06);
+  --shadow-lift: 0 16px 32px rgb(32 34 36 / 0.1);
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply min-h-screen bg-canvas font-sans text-body antialiased;
+    letter-spacing: 0.01em;
+  }
+  /* Button geometry is intentionally sharp across native controls. */
+  button {
+    border-radius: 0 !important;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display font-normal text-ink;
+  }
+  ::selection {
+    @apply bg-brand-100 text-brand-950;
+  }
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+@layer components {
+  /* Button heights mirror the Figma S/M/L variants: 40 / 48 / 56px. */
+  .button-primary {
+    @apply inline-flex min-h-12 items-center justify-center rounded-none border border-black bg-black px-8 py-3 text-sm font-normal uppercase tracking-[0.1em] text-[#fcfcfc] transition hover:border-brand-700 hover:bg-brand-700 active:bg-brand-800 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .button-secondary {
+    @apply inline-flex min-h-12 items-center justify-center rounded-none border border-black bg-black px-8 py-3 text-sm font-normal uppercase tracking-[0.1em] text-[#fcfcfc] transition hover:border-brand-700 hover:bg-brand-700 active:bg-brand-800;
+  }
+  .button-ghost {
+    @apply inline-flex min-h-11 items-center justify-center rounded-none px-4 py-2.5 text-sm font-normal uppercase tracking-[0.08em] text-muted transition hover:bg-field hover:text-black;
+  }
+  .card {
+    @apply rounded-sm border border-line bg-surface shadow-card;
+  }
+  .eyebrow {
+    @apply text-xs font-normal uppercase tracking-[0.18em] text-brand-700;
+  }
+  .input {
+    @apply mt-1 min-h-12 w-full rounded-none border border-line bg-field px-4 font-normal text-ink transition placeholder:text-placeholder hover:border-brand-300 focus:border-brand-600 focus:bg-white;
+  }
+  .tag {
+    @apply inline-flex min-h-8 items-center justify-center rounded-full bg-field px-3 py-2 text-sm leading-4 text-body;
+  }
+  .tag-outline {
+    @apply inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-line bg-transparent px-3 py-2 text-sm leading-4 text-body;
+  }
+}
+
+html[data-player-font="large"] {
+  font-size: 112.5%;
+}
+html[data-player-font="extra-large"] {
+  font-size: 125%;
+}
+html.high-contrast body {
+  background: white;
+  color: black;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+.protected-content {
+  transition: filter 80ms linear;
+}
+
+.protected-content--shielded {
+  filter: blur(32px);
+  visibility: hidden;
+}
+
+.content-protection-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(252 252 252);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.content-protection-overlay--visible {
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+@media print {
+  html.content-protected .protected-content {
+    display: none !important;
+  }
+
+  html.content-protected .content-protection-overlay {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}

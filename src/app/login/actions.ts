@@ -1,0 +1,133 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import {
+  authCredentialsSchema,
+  studentRegistrationSchema,
+} from "@/lib/validation/auth";
+
+function authError(message: string, mode: "login" | "signup"): never {
+  redirect(`/login?mode=${mode}&error=${encodeURIComponent(message)}`);
+}
+
+function parseCredentials(formData: FormData, mode: "login" | "signup") {
+  const parsed = authCredentialsSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success)
+    authError(
+      "Enter a valid email and a password of at least 8 characters.",
+      mode,
+    );
+  return parsed.data;
+}
+
+export async function signInWithPassword(formData: FormData) {
+  const credentials = parseCredentials(formData, "login");
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email: credentials.email,
+    password: credentials.password,
+  });
+  if (error) authError("The email or password is incorrect.", "login");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .maybeSingle();
+  if (profile?.role !== "student") {
+    await supabase.auth.signOut();
+    authError("This portal is available to student accounts only.", "login");
+  }
+  redirect("/login");
+}
+
+export async function signUpWithPassword(formData: FormData) {
+  const registration = studentRegistrationSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
+    username: formData.get("username"),
+    countryCode: formData.get("countryCode"),
+    phoneCountryCode: formData.get("phoneCountryCode"),
+    phoneNumber: formData.get("phoneNumber"),
+    medicalSchool: formData.get("medicalSchool") || undefined,
+    trainingLevel: formData.get("trainingLevel") || undefined,
+    studyStage: formData.get("studyStage"),
+    acceptedTerms: formData.get("acceptedTerms"),
+  });
+  if (!registration.success) {
+    authError(
+      "Review your registration details, phone number, and acceptance of the terms.",
+      "signup",
+    );
+  }
+
+  const credentials = registration.data;
+  const supabase = await createClient();
+  const { data: usernameAvailable, error: usernameError } = await supabase.rpc(
+    "username_available",
+    { candidate: credentials.username },
+  );
+  if (usernameError || usernameAvailable !== true)
+    authError(
+      usernameError
+        ? "We could not check that username. Please try again."
+        : "That username is already taken. Please choose another.",
+      "signup",
+    );
+  const { data, error } = await supabase.auth.signUp({
+    email: credentials.email,
+    password: credentials.password,
+  });
+  if (error)
+    authError(
+      "We could not create the account. The email may already be registered.",
+      "signup",
+    );
+  if (data.session && data.user) {
+    const targetExam =
+      credentials.studyStage === "residency_interviews"
+        ? "step2ck"
+        : credentials.studyStage;
+    const { error: profileError } = await supabase.from("profiles").upsert(
+      {
+        id: data.user.id,
+        username: credentials.username,
+        first_name: credentials.firstName,
+        last_name: credentials.lastName,
+        full_name: `${credentials.firstName} ${credentials.lastName}`,
+        email: credentials.email,
+        country_code: credentials.countryCode,
+        phone_country_code: credentials.phoneCountryCode,
+        phone_number: credentials.phoneNumber,
+        medical_school: credentials.medicalSchool || null,
+        training_level: credentials.trainingLevel || null,
+        study_stage: credentials.studyStage,
+        // Residency-interview students keep Step 2 CK as the question-bank
+        // default while their real journey stage remains separately recorded.
+        target_exam: targetExam,
+        role: "student",
+        onboarding_completed: true,
+      },
+      { onConflict: "id" },
+    );
+    if (profileError)
+      redirect(
+        "/onboarding?error=Your+account+was+created%2C+but+we+could+not+save+your+profile.+Please+complete+it+again.",
+      );
+    redirect("/dashboard");
+  }
+  authError(
+    "The account was created but could not be signed in. Please try again.",
+    "login",
+  );
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/");
+}

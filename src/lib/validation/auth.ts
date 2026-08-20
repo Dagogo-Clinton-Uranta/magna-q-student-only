@@ -1,0 +1,49 @@
+import { z } from "zod";
+import { COUNTRIES } from "@/lib/countries";
+
+const countryCodes = new Set(COUNTRIES.map((country) => country.code));
+
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, "Use at least 3 characters.")
+  .max(24, "Use no more than 24 characters.")
+  .regex(
+    /^[a-z0-9_]+$/,
+    "Use lowercase letters, numbers, and underscores only.",
+  );
+
+export const studentProfileSchema = z.object({
+  username: usernameSchema,
+  firstName: z.string().trim().min(1).max(60),
+  lastName: z.string().trim().min(1).max(60),
+  countryCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .refine((value) => countryCodes.has(value), "Select a valid country."),
+  phoneCountryCode: z
+    .string()
+    .trim()
+    .regex(/^\+[1-9]\d{0,3}$/),
+  phoneNumber: z
+    .string()
+    .transform((value) => value.replace(/[^0-9]/g, ""))
+    .pipe(z.string().min(5).max(15)),
+  medicalSchool: z.string().trim().max(200).optional(),
+  trainingLevel: z.string().trim().max(100).optional(),
+  studyStage: z.enum(["step1", "step2ck", "step3", "residency_interviews"]),
+  acceptedTerms: z.literal("on"),
+});
+
+export const authCredentialsSchema = z.object({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(8).max(72),
+});
+
+export const studentRegistrationSchema = authCredentialsSchema.extend(
+  studentProfileSchema.shape,
+);
+
+export const onboardingSchema = studentProfileSchema;
