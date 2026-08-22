@@ -23,9 +23,18 @@ export default async function BlogPostPage({
     .eq("published", true)
     .maybeSingle();
   if (!post) notFound();
-  const fallbackSource = Array.isArray(post.source_links)
-    ? (post.source_links as Source[])[0]
-    : undefined;
+  const sourceLinks = Array.isArray(post.source_links)
+    ? (post.source_links as unknown[]).filter(
+        (source): source is Source =>
+          typeof source === "object" &&
+          source !== null &&
+          "title" in source &&
+          typeof source.title === "string" &&
+          "url" in source &&
+          typeof source.url === "string" &&
+          /^https?:\/\//.test(source.url),
+      )
+    : [];
   const paragraphs = [
     post.paragraph_1,
     post.paragraph_2,
@@ -39,8 +48,16 @@ export default async function BlogPostPage({
     post.image_url_1 ?? post.image_urls[0],
     post.image_url_2 ?? post.image_urls[1],
   ];
-  const relevantLink = post.relevant_link ?? fallbackSource?.url;
-  const linkTitle = post.link_title ?? fallbackSource?.title;
+  if (
+    sourceLinks.length === 0 &&
+    typeof post.relevant_link === "string" &&
+    /^https?:\/\//.test(post.relevant_link)
+  ) {
+    sourceLinks.push({
+      title: post.link_title ?? "Further reading",
+      url: post.relevant_link,
+    });
+  }
   return (
     <AppShell title="Community blog" name={profile.fullName}>
       <BlogReadTracker postId={post.id} />
@@ -75,17 +92,27 @@ export default async function BlogPostPage({
             />
             <p>{paragraphs[3]}</p>
           </div>
-          {relevantLink && linkTitle && (
+          {sourceLinks.length > 0 && (
             <aside className="mt-10 rounded-xl bg-slate-50 p-5">
-              <h2 className="font-bold">{linkTitle}</h2>
-              <a
-                href={relevantLink}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-block break-all font-semibold text-blue-800 underline"
-              >
-                {relevantLink}
-              </a>
+              <h2 className="font-bold">Sources and further reading</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Use these primary sources to verify dates, policy status, and
+                medical claims before relying on this editorial summary.
+              </p>
+              <ul className="mt-4 space-y-3">
+                {sourceLinks.map((source) => (
+                  <li key={source.url}>
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-semibold text-blue-800 underline underline-offset-2"
+                    >
+                      {source.title} ↗
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </aside>
           )}
           <Link

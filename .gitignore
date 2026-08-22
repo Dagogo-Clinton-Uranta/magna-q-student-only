@@ -13,5 +13,6 @@ supabase/.temp/
 *.odt
 *.doc
 *.xlsx
+*.csv
 *.pdf
 *.fig

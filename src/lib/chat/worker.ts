@@ -4,6 +4,7 @@ import {
   type ChatModerationJob,
 } from "@/lib/chat/queue";
 import { publishChatRealtimeEvent } from "@/lib/chat/realtime";
+import { configuredRedisUrl } from "@/lib/redis/url";
 
 async function moderateWithOpenAI(content: string) {
   // OPENAI_API_KEY is required here before production AI moderation can run.
@@ -29,14 +30,18 @@ async function moderateWithOpenAI(content: string) {
 }
 
 export async function startChatModerationWorker() {
-  if (!process.env.REDIS_URL || !process.env.MONGODB_URI) return null;
+  const redisUrl = configuredRedisUrl();
+  if (!redisUrl || !process.env.MONGODB_URI) return null;
   const [{ Worker }, { default: IORedis }] = await Promise.all([
     import("bullmq"),
     import("ioredis"),
   ]);
-  const connection = new IORedis(process.env.REDIS_URL, {
+  const connection = new IORedis(redisUrl, {
     maxRetriesPerRequest: null,
   });
+  connection.on("error", (error) =>
+    console.error("Chat moderation Redis failed.", error),
+  );
   const worker = new Worker<ChatModerationJob>(
     CHAT_MODERATION_QUEUE,
     async (job) => {

@@ -35,11 +35,12 @@ export default async function BlogsPage({
       <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
         <p className="eyebrow">Learn together</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
-          Exam updates, practical strategies and residency perspectives
+          U.S. medical policy, research and training-system updates
         </h2>
         <p className="mt-3 max-w-3xl leading-7 text-muted">
-          A growing collection for doctors navigating the USMLE pathway and the
-          transition into US residency training.
+          Plain-language, source-linked briefings on the issues shaping American
+          medicine—and how to discuss them thoughtfully in exams and residency
+          interviews.
         </p>
       </section>
       <section

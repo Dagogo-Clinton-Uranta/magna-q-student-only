@@ -1,7 +1,7 @@
 export const INTERVIEW_ANALYSIS_QUEUE = "interview-video-analysis";
 
 export async function enqueueInterviewAnalysis(videoId: string) {
-  const redisUrl = process.env.REDIS_URL;
+  const redisUrl = configuredRedisUrl();
   if (!redisUrl) return false;
   const [{ Queue }, { default: IORedis }] = await Promise.all([
     import("bullmq"),
@@ -27,3 +27,4 @@ export async function enqueueInterviewAnalysis(videoId: string) {
     await connection.quit();
   }
 }
+import { configuredRedisUrl } from "@/lib/redis/url";

@@ -5,6 +5,7 @@ import { ChronologicalTimeline } from "@/components/guidelines/chronological-tim
 import { requireRole } from "@/lib/auth/guards";
 import { getGuide, guides } from "@/lib/guidelines/guides";
 import { StepOneApplicationGuide } from "@/components/guidelines/step-one-application-guide";
+import { ResidencyMatchPlanner } from "@/components/guidelines/residency-match-planner";
 
 export function generateStaticParams() {
   return guides.map((guide) => ({ guide: guide.slug }));
@@ -46,17 +47,36 @@ export default async function GuidePage({
           </div>
         ))}
       </section>
-      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div
+        className={
+          guide.residencyTimeline
+            ? "mt-10 space-y-7"
+            : "mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]"
+        }
+      >
         <section>
           <p className="text-sm font-bold uppercase tracking-widest text-blue-700">
             Chronological planner
           </p>
           <h2 className="mt-2 text-2xl font-black">What to do, in order</h2>
-          <ChronologicalTimeline items={guide.timeline} />
+          {guide.residencyTimeline ? (
+            <ResidencyMatchPlanner
+              items={guide.residencyTimeline}
+              today={new Date().toISOString().slice(0, 10)}
+            />
+          ) : (
+            <ChronologicalTimeline items={guide.timeline ?? []} />
+          )}
         </section>
         <aside className="h-fit rounded-xl border border-red-200 bg-red-50 p-5">
           <h2 className="font-bold text-red-950">Common gotchas</h2>
-          <ul className="mt-3 space-y-3 text-sm leading-6 text-red-900">
+          <ul
+            className={`mt-3 text-sm leading-6 text-red-900 ${
+              guide.residencyTimeline
+                ? "grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+                : "space-y-3"
+            }`}
+          >
             {guide.gotchas.map((item) => (
               <li key={item} className="flex gap-2">
                 <span aria-hidden>!</span>

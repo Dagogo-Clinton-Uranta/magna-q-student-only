@@ -1,10 +1,16 @@
+import {
+  residencyMatchMilestones,
+  type ResidencyMatchMilestone,
+} from "@/lib/guidelines/residency-match";
+
 export type Guide = {
   slug: "step-1" | "step-2-ck" | "step-3" | "residency-match";
   eyebrow: string;
   title: string;
   summary: string;
   examAtAGlance: { label: string; value: string }[];
-  timeline: { stage: string; timing: string; detail: string }[];
+  timeline?: { stage: string; timing: string; detail: string }[];
+  residencyTimeline?: ResidencyMatchMilestone[];
   whatToExpect: string[];
   gotchas: string[];
   sources: { label: string; href: string }[];
@@ -247,44 +253,7 @@ export const guides: Guide[] = [
       { label: "Match Week", value: "Mar 15–19, 2027" },
       { label: "Match Day", value: "Mar 19, 2027 · noon ET" },
     ],
-    timeline: [
-      {
-        stage: "Research programs",
-        timing: "June–September 2026",
-        detail:
-          "Use the NRMP Program Directory and verify each program’s application-service requirements. Build your documents and seek advising early.",
-      },
-      {
-        stage: "Register separately",
-        timing: "September 15, 2026",
-        detail:
-          "Applicant registration opens in NRMP R3. Register for both NRMP and the application service required by programs; one does not replace the other.",
-      },
-      {
-        stage: "Avoid late registration",
-        timing: "By January 29, 2027",
-        detail:
-          "Standard registration ends at 11:59 p.m. ET. A $50 additional fee applies after this deadline.",
-      },
-      {
-        stage: "Rank and certify",
-        timing: "February 1–March 3, 2027",
-        detail:
-          "Ranking opens February 1. Enter programs in your true preference order, then certify before the March 3 deadline. IMG ECFMG verification is also due March 3.",
-      },
-      {
-        stage: "Match Week and SOAP",
-        timing: "March 15–18, 2027",
-        detail:
-          "Match status arrives March 15. Eligible unmatched or partially matched applicants may participate in SOAP through NRMP R3.",
-      },
-      {
-        stage: "Match Day",
-        timing: "March 19, 2027",
-        detail:
-          "Final results are available at noon ET through R3 and courtesy email.",
-      },
-    ],
+    residencyTimeline: residencyMatchMilestones,
     whatToExpect: [
       "You apply to programs, interview, then rank only programs where you would be willing to train.",
       "Programs rank interviewed applicants; NRMP’s algorithm uses both sets of ranked preferences.",

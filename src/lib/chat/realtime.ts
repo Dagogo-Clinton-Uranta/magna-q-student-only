@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import IORedis from "ioredis";
 import type { ChatMessageDto } from "@/lib/chat/types";
+import { requireRedisUrl } from "@/lib/redis/url";
 
 export type ChatRealtimeEvent =
   | { type: "message:created"; message: ChatMessageDto }
@@ -12,16 +13,9 @@ const CHAT_REALTIME_BLOCK_MS = 5_000;
 const workerOrigin = `worker:${randomUUID()}`;
 let publisher: IORedis | undefined;
 
-function redisUrl() {
-  const value = process.env.REDIS_URL;
-  if (!value)
-    throw new Error("REDIS_URL is required for realtime chat delivery.");
-  return value;
-}
-
 function publisherClient() {
   if (!publisher) {
-    publisher = new IORedis(redisUrl(), {
+    publisher = new IORedis(requireRedisUrl("realtime chat delivery"), {
       maxRetriesPerRequest: 1,
       retryStrategy: (attempt) => Math.min(attempt * 200, 5_000),
     });
@@ -86,7 +80,7 @@ export async function subscribeToChatRealtimeEvents(
   localOrigin: string,
   onEvent: (event: ChatRealtimeEvent) => void,
 ) {
-  const client = new IORedis(redisUrl(), {
+  const client = new IORedis(requireRedisUrl("realtime chat delivery"), {
     maxRetriesPerRequest: null,
     retryStrategy: (attempt) => Math.min(attempt * 200, 5_000),
   });

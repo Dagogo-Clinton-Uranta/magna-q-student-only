@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://i.ytimg.com https://*.amazonaws.com ${configuredS3Origins.join(" ")}; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com ${configuredS3Origins.join(" ")}; font-src 'self'; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://i.ytimg.com https://*.amazonaws.com ${configuredS3Origins.join(" ")}; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com ${configuredS3Origins.join(" ")}; font-src 'self'; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com https://www.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
           },
         ],
       },

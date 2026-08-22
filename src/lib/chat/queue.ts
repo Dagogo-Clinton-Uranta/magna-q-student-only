@@ -2,9 +2,7 @@ export const CHAT_MODERATION_QUEUE = "chat-message-moderation";
 export type ChatModerationJob = { messageId: string };
 
 export async function enqueueChatModeration(data: ChatModerationJob) {
-  const redisUrl = process.env.REDIS_URL;
-  if (!redisUrl)
-    throw new Error("REDIS_URL is required to queue AI moderation.");
+  const redisUrl = requireRedisUrl("chat AI moderation");
   const [{ Queue }, { default: IORedis }] = await Promise.all([
     import("bullmq"),
     import("ioredis"),
@@ -26,3 +24,4 @@ export async function enqueueChatModeration(data: ChatModerationJob) {
     await connection.quit();
   }
 }
+import { requireRedisUrl } from "@/lib/redis/url";

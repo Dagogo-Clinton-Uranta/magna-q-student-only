@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import IORedis from "ioredis";
+import { requireRedisUrl } from "@/lib/redis/url";
 
 export type SocketUser = {
   id: string;
@@ -28,12 +29,14 @@ function configuredTtlSeconds() {
 }
 
 function socketAuthRedis() {
-  const redisUrl = process.env.REDIS_URL;
-  if (!redisUrl)
-    throw new Error("REDIS_URL is required for chat socket authentication.");
-  redis ??= new IORedis(redisUrl, {
-    maxRetriesPerRequest: 1,
-  });
+  if (!redis) {
+    redis = new IORedis(requireRedisUrl("chat socket authentication"), {
+      maxRetriesPerRequest: 1,
+    });
+    redis.on("error", (error) =>
+      console.error("Chat socket authentication Redis failed.", error),
+    );
+  }
   return redis;
 }
 
