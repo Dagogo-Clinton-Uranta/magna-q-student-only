@@ -47,3 +47,8 @@ export const studentRegistrationSchema = authCredentialsSchema.extend(
 );
 
 export const onboardingSchema = studentProfileSchema;
+
+export const editableStudentProfileSchema = studentProfileSchema.omit({
+  username: true,
+  acceptedTerms: true,
+});

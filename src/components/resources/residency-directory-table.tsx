@@ -5,10 +5,12 @@ export function ResidencyDirectoryTable({
   rows,
   compact = false,
   startIndex = 0,
+  viewBasePath = "/resources/residency-directory",
 }: {
   rows: ResidencyDirectoryRow[];
   compact?: boolean;
   startIndex?: number;
+  viewBasePath?: string;
 }) {
   return (
     <div className="overflow-x-auto border border-slate-200 bg-white">
@@ -108,7 +110,7 @@ export function ResidencyDirectoryTable({
                   </td>
                   <td className="px-4 py-4">
                     <Link
-                      href={`/resources/residency-directory/${residency.id}`}
+                      href={`${viewBasePath}/${residency.id}`}
                       className="button-primary min-h-10 px-5 py-2 text-xs"
                       aria-label={`View details for ${residency.program_name ?? "this residency program"}`}
                     >

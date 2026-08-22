@@ -13,7 +13,8 @@ type IconName =
   | "guide"
   | "article"
   | "chat"
-  | "feedback";
+  | "feedback"
+  | "profile";
 
 type NavigationItem = { label: string; href: string; icon: IconName };
 
@@ -26,6 +27,7 @@ const studentItems: readonly NavigationItem[] = [
   { label: "Community blogs", href: "/blogs", icon: "article" },
   { label: "Chat rooms", href: "/chat-rooms", icon: "chat" },
   { label: "Feedback", href: "/feedback", icon: "feedback" },
+  { label: "Profile", href: "/profile", icon: "profile" },
 ] as const;
 
 const warmedMenus = new Set<string>();
@@ -165,6 +167,12 @@ function NavIcon({ name }: { name: IconName }) {
       <>
         <path d="M12 21a9 9 0 1 0-9-9" />
         <path d="M3 16v5h5M8 9h8M8 13h5" />
+      </>
+    ),
+    profile: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
       </>
     ),
   };
