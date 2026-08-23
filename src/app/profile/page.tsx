@@ -32,7 +32,7 @@ export default async function ProfilePage({
     searchParams,
   ]);
   const supabase = await createClient();
-  const [detailsResult, trackedResult] = await Promise.all([
+  const [detailsResult, trackedResult, trackedEventResult] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -44,6 +44,10 @@ export default async function ProfilePage({
       .from("tracked_residencies")
       .select("residency_id", { count: "exact", head: true })
       .eq("user_id", profile.id),
+    supabase
+      .from("tracked_residency_events")
+      .select("event_id", { count: "exact", head: true })
+      .eq("user_id", profile.id),
   ]);
 
   if (detailsResult.error || !detailsResult.data) {
@@ -52,9 +56,13 @@ export default async function ProfilePage({
   if (trackedResult.error) {
     throw new Error("Unable to load your tracked residencies.");
   }
+  if (trackedEventResult.error) {
+    throw new Error("Unable to load your tracked opportunities.");
+  }
 
   const details = detailsResult.data as unknown as ProfileDetails;
   const trackedCount = trackedResult.count ?? 0;
+  const trackedEventCount = trackedEventResult.count ?? 0;
   const fallbackNames = details.full_name.trim().split(/\s+/);
   const firstName = details.first_name ?? fallbackNames[0] ?? "";
   const lastName =
@@ -245,6 +253,34 @@ export default async function ProfilePage({
           </div>
           <Link href="/profile/tracked-residencies" className="button-primary">
             Open tracked residencies →
+          </Link>
+        </div>
+      </section>
+
+      <section
+        className="mt-8 border border-slate-200 bg-white p-6 sm:p-8"
+        aria-labelledby="tracked-opportunities-title"
+      >
+        <p className="eyebrow">Your event plan</p>
+        <h2 id="tracked-opportunities-title" className="mt-2 text-2xl">
+          Tracked opportunities
+        </h2>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-5 border border-brand-200 bg-soft p-5 sm:p-6">
+          <div>
+            <p className="text-lg font-bold text-slate-950">
+              {trackedEventCount}{" "}
+              {trackedEventCount === 1 ? "opportunity" : "opportunities"} saved
+            </p>
+            <p className="mt-2 max-w-2xl leading-7 text-slate-600">
+              Review starred open houses and networking events, then maintain
+              private preparation and follow-up notes.
+            </p>
+          </div>
+          <Link
+            href="/profile/tracked-opportunities"
+            className="button-primary"
+          >
+            Open tracked opportunities →
           </Link>
         </div>
       </section>

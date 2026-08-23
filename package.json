@@ -19,6 +19,7 @@
     "test:db": "bash tests/integration/verify-migrations.sh",
     "test:e2e": "playwright test",
     "worker:interviews": "tsx scripts/interview-analysis-worker.ts",
+    "seed:residency-events": "tsx scripts/import-residency-events.ts",
     "migrate:chat": "tsx scripts/migrate-chat-mongodb.ts",
     "worker:chat": "tsx scripts/chat-moderation-worker.ts"
   },
@@ -29,6 +30,7 @@
     "@supabase/supabase-js": "^2.110.8",
     "@vercel/functions": "^3.9.3",
     "bullmq": "^6.0.9",
+    "csv-parse": "^6.1.0",
     "framer-motion": "^12.43.0",
     "ioredis": "^6.0.0",
     "mongoose": "^9.9.1",

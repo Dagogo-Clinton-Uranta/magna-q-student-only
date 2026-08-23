@@ -7,6 +7,12 @@ student block generation and playback, analytics, interview practice, billing,
 registration, feedback, usernames, and community content. Staff-only authoring
 and dashboard migrations live with the separate administration module.
 
+Residency event research uses `residency_programs` as a UUID-backed projection
+of the populated `residencies` directory. `residency_events` stores event facts,
+`residency_event_programs` supports events spanning multiple programs, and
+`residency_event_research_status` distinguishes a completed search with no event
+found from a program that has not yet been checked or needs another review.
+
 Questions can belong to one or more subjects but must belong to exactly one
 system (stored in the legacy `categories` tables). The create-test filter treats
 multiple history types as a union, then intersects that pool with the selected

@@ -2,25 +2,42 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { YoutubeVideoCard } from "@/components/resources/youtube-video-card";
 import { ResidencyDirectoryTable } from "@/components/resources/residency-directory-table";
+import { ResidencyEventTable } from "@/components/resources/residency-event-table";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
   RESIDENCY_DIRECTORY_COLUMNS,
   type ResidencyDirectoryRow,
 } from "@/lib/residencies/directory";
 import { RESOURCE_CATEGORIES } from "@/lib/resources/videos";
+import {
+  RESIDENCY_EVENT_DIRECTORY_COLUMNS,
+  type ResidencyEventDirectoryRow,
+} from "@/lib/residencies/events";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ResourcesPage() {
   const profile = await requireOnboardedProfile();
   const supabase = await createClient();
-  const { data: residencyRows } = await supabase
-    .from("residencies")
-    .select(RESIDENCY_DIRECTORY_COLUMNS)
-    .order("source_order", { ascending: true })
-    .order("id", { ascending: true })
-    .range(0, 4);
+  const [{ data: residencyRows }, { data: eventRows }] = await Promise.all([
+    supabase
+      .from("residencies")
+      .select(RESIDENCY_DIRECTORY_COLUMNS)
+      .order("source_order", { ascending: true })
+      .order("id", { ascending: true })
+      .range(0, 4),
+    supabase
+      .from("residency_event_directory")
+      .select(RESIDENCY_EVENT_DIRECTORY_COLUMNS)
+      .gte("event_date", new Date().toISOString().slice(0, 10))
+      .eq("status", "upcoming")
+      .order("event_date", { ascending: true })
+      .order("start_time", { ascending: true, nullsFirst: false })
+      .range(0, 4),
+  ]);
   const residencyTeaser = (residencyRows ??
     []) as unknown as ResidencyDirectoryRow[];
+  const eventTeaser = (eventRows ??
+    []) as unknown as ResidencyEventDirectoryRow[];
   return (
     <AppShell title="Resources" name={profile.fullName}>
       <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
@@ -63,6 +80,40 @@ export default async function ResourcesPage() {
           className="button-primary mt-6"
         >
           Browse full directory →
+        </Link>
+      </section>
+
+      <section
+        className="mt-10 border-b border-slate-200 pb-10"
+        aria-labelledby="residency-opportunities-title"
+      >
+        <p className="eyebrow">Connect with programs</p>
+        <h2
+          id="residency-opportunities-title"
+          className="mt-2 text-2xl font-black"
+        >
+          Open houses and networking opportunities
+        </h2>
+        <p className="mt-2 max-w-3xl leading-7 text-slate-600">
+          Find verified applicant open houses, information sessions, resident
+          Q&amp;As, and networking events. Compare dates and formats, then save
+          the opportunities that matter to your application plan.
+        </p>
+        <div className="mt-5">
+          {eventTeaser.length > 0 ? (
+            <ResidencyEventTable rows={eventTeaser} compact />
+          ) : (
+            <p className="border border-slate-200 bg-white p-6 text-slate-600">
+              New residency opportunities are being researched. Browse the
+              directory for the latest verified events.
+            </p>
+          )}
+        </div>
+        <Link
+          href="/resources/open-house-opportunities"
+          className="button-primary mt-6"
+        >
+          Browse opportunities →
         </Link>
       </section>
 
