@@ -14,6 +14,9 @@ export type GuidelineClassification = (typeof guidelineClassifications)[number];
 export const guidelineCardGridClassName =
   "mt-10 grid auto-rows-fr gap-5 lg:grid-cols-2";
 
+export const guidelineCardClassName =
+  "flex h-full min-h-[30rem] flex-col rounded-xl p-6";
+
 export function getGuidelineCardPlacement(slug: string) {
   if (slug === "residency-program-signaling-strategy-2027") {
     return "lg:col-start-1 lg:row-start-2";

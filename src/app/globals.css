@@ -49,6 +49,33 @@
   --shadow-lift: 0 16px 32px rgb(32 34 36 / 0.1);
 }
 
+html.dark {
+  color-scheme: dark;
+  --color-brand-50: 49 39 35;
+  --color-brand-100: 62 46 40;
+  --color-brand-200: 104 72 61;
+  --color-brand-300: 165 111 89;
+  --color-brand-400: 196 138 112;
+  --color-brand-500: 210 154 129;
+  --color-brand-600: 215 160 136;
+  --color-brand-700: 231 180 157;
+  --color-brand-800: 239 201 183;
+  --color-brand-900: 246 221 209;
+  --color-brand-950: 252 240 234;
+  --color-accent: 231 150 116;
+  --color-ink: 245 245 245;
+  --color-body: 225 227 230;
+  --color-muted: 174 179 186;
+  --color-placeholder: 135 141 149;
+  --color-surface: 27 29 32;
+  --color-canvas: 17 19 21;
+  --color-soft: 43 34 31;
+  --color-field: 34 37 41;
+  --color-line: 61 65 71;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.25);
+  --shadow-lift: 0 16px 32px rgb(0 0 0 / 0.35);
+}
+
 @layer base {
   html {
     @apply scroll-smooth;
@@ -100,6 +127,15 @@
   .tag-outline {
     @apply inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-line bg-transparent px-3 py-2 text-sm leading-4 text-body;
   }
+
+  /* Toggles intentionally use pill/circle geometry as an exception to the
+   * product's otherwise sharp-edged native button rule. */
+  .settings-toggle {
+    border-radius: 9999px;
+  }
+  .settings-toggle__thumb {
+    border-radius: 9999px;
+  }
 }
 
 html[data-player-font="large"] {
@@ -111,6 +147,41 @@ html[data-player-font="extra-large"] {
 html.high-contrast body {
   background: white;
   color: black;
+}
+
+/* Older screens still using literal light palette utilities inherit the
+ * selected theme while they are progressively migrated to semantic tokens. */
+html.dark .bg-white {
+  background-color: rgb(var(--color-surface));
+}
+html.dark .bg-white\/90 {
+  background-color: rgb(var(--color-surface) / 0.9);
+}
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-slate-200 {
+  background-color: rgb(var(--color-field));
+}
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgb(var(--color-line));
+}
+html.dark .text-black,
+html.dark .text-slate-800,
+html.dark .text-slate-900,
+html.dark .text-slate-950 {
+  color: rgb(var(--color-ink));
+}
+html.dark .text-slate-500,
+html.dark .text-slate-600,
+html.dark .text-slate-700 {
+  color: rgb(var(--color-muted));
+}
+html.dark .text-slate-300,
+html.dark .text-slate-400 {
+  color: rgb(var(--color-placeholder));
 }
 
 @media (prefers-reduced-motion: reduce) {

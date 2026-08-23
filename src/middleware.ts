@@ -12,6 +12,7 @@ const protectedPrefixes = [
   "/subscribe",
   "/subscription",
   "/feedback",
+  "/settings",
   "/onboarding",
 ];
 

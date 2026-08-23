@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { ConditionalSiteFooter } from "@/components/layout/site-footer";
 import { ContentProtection } from "@/components/security/content-protection";
+import { ThemeRouteController } from "@/components/settings/theme-route-controller";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,8 +16,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var p=location.pathname;var excluded=p==='/login'||p==='/onboarding';var dark=localStorage.getItem('magna-q-theme')==='dark'&&!excluded;document.documentElement.classList.toggle('dark',dark)}catch(e){}})()`,
+          }}
+        />
         {/* Tenor Sans is the source Figma system's typeface. This stylesheet
             keeps the build independent of font downloads at compile time. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -31,6 +37,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <ThemeRouteController />
         <ContentProtection>{children}</ContentProtection>
         <ConditionalSiteFooter />
       </body>

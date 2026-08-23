@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getGuidelineCardPlacement,
+  guidelineCardClassName,
   guidelineCardGridClassName,
   parseGuidelineArticle,
 } from "./articles";
@@ -37,6 +38,8 @@ describe("guideline article records", () => {
   it("uses equal card tracks and places networking below official sources", () => {
     expect(guidelineCardGridClassName).toContain("auto-rows-fr");
     expect(guidelineCardGridClassName).toContain("lg:grid-cols-2");
+    expect(guidelineCardClassName).toContain("min-h-[30rem]");
+    expect(guidelineCardClassName).toContain("h-full");
     expect(
       getGuidelineCardPlacement("networking-your-way-into-residency-2027"),
     ).toContain("lg:col-start-2");

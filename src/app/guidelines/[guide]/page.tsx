@@ -8,6 +8,7 @@ import { StepOneApplicationGuide } from "@/components/guidelines/step-one-applic
 import { ResidencyMatchPlanner } from "@/components/guidelines/residency-match-planner";
 import {
   getGuidelineCardPlacement,
+  guidelineCardClassName,
   guidelineCardGridClassName,
   parseGuidelineSummary,
 } from "@/lib/guidelines/articles";
@@ -94,7 +95,9 @@ export default async function GuidePage({
         </aside>
       </div>
       <section className={guidelineCardGridClassName}>
-        <div className="h-full rounded-xl border border-slate-200 bg-white p-6">
+        <div
+          className={`${guidelineCardClassName} border border-slate-200 bg-white`}
+        >
           <h2 className="text-xl font-bold">What to expect</h2>
           <ul className="mt-4 space-y-3 leading-7 text-slate-700">
             {guide.whatToExpect.map((item) => (
@@ -105,7 +108,9 @@ export default async function GuidePage({
             ))}
           </ul>
         </div>
-        <div className="h-full rounded-xl border border-blue-200 bg-blue-50 p-6">
+        <div
+          className={`${guidelineCardClassName} border border-blue-200 bg-blue-50`}
+        >
           <h2 className="text-xl font-bold text-blue-950">Official sources</h2>
           <p className="mt-2 text-sm leading-6 text-blue-900">
             Reviewed August 2026. Open the source before acting—this guide
@@ -130,7 +135,7 @@ export default async function GuidePage({
           <Link
             key={article.id}
             href={`/guidelines/residency-match/${article.slug}`}
-            className={`group block h-full rounded-xl border border-brand-300 bg-soft p-6 transition hover:-translate-y-0.5 hover:border-brand-600 hover:shadow-lg ${getGuidelineCardPlacement(article.slug)}`}
+            className={`group ${guidelineCardClassName} border border-brand-300 bg-soft transition hover:-translate-y-0.5 hover:border-brand-600 hover:shadow-lg ${getGuidelineCardPlacement(article.slug)}`}
           >
             <p className="eyebrow">Guideline article</p>
             <h2 className="mt-2 text-xl font-bold text-ink">{article.title}</h2>
@@ -147,7 +152,7 @@ export default async function GuidePage({
                 </li>
               ))}
             </ul>
-            <span className="mt-5 inline-flex font-bold text-brand-800 group-hover:underline">
+            <span className="mt-auto inline-flex pt-5 font-bold text-brand-800 group-hover:underline">
               Read the full guide →
             </span>
           </Link>

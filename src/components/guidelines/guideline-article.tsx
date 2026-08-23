@@ -77,7 +77,7 @@ export function GuidelineArticle({
             Sources and further reading
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Signal counts and program participation can change. Recheck the
+            Dates, policies and program requirements can change. Recheck the
             current official guidance before submitting your application.
           </p>
           <ul className="mt-4 space-y-3">
@@ -133,14 +133,29 @@ function GuidelineSectionCard({
             </p>
           )}
           <ul className="mt-3 space-y-2 text-sm leading-6 text-body">
-            {section.bullets.map((point) => (
-              <li key={point} className="flex gap-2">
-                <span aria-hidden="true" className="text-brand-700">
-                  •
-                </span>
-                <span>{point}</span>
-              </li>
-            ))}
+            {section.bullets.map((point) => {
+              const isStory =
+                /^(Story example|Real-world story|Worked story|Micro-story|Identity example) —/.test(
+                  point,
+                );
+              return (
+                <li
+                  key={point}
+                  className={
+                    isStory
+                      ? "mt-4 border-l-4 border-brand-500 bg-soft p-4 text-body"
+                      : "flex gap-2"
+                  }
+                >
+                  {!isStory && (
+                    <span aria-hidden="true" className="text-brand-700">
+                      •
+                    </span>
+                  )}
+                  <span>{point}</span>
+                </li>
+              );
+            })}
           </ul>
           {section.links.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
