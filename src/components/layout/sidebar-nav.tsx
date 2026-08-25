@@ -4,9 +4,11 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BrandMark } from "@/components/brand/brand-mark";
+import type { StudentStage } from "@/lib/stages";
 
 type IconName =
   | "home"
+  | "spotlight"
   | "test"
   | "video"
   | "book"
@@ -19,10 +21,12 @@ type IconName =
 
 type NavigationItem = { label: string; href: string; icon: IconName };
 
-const studentItems: readonly NavigationItem[] = [
+const commonStart: readonly NavigationItem[] = [
   { label: "Overview", href: "/dashboard", icon: "home" },
-  { label: "Practice tests", href: "/create-test", icon: "test" },
-  { label: "Interview practice", href: "/interview-practice", icon: "video" },
+  { label: "Get Featured", href: "/get-featured", icon: "spotlight" },
+];
+
+const commonEnd: readonly NavigationItem[] = [
   { label: "Resources", href: "/resources", icon: "book" },
   { label: "Guidelines", href: "/guidelines", icon: "guide" },
   { label: "Community blogs", href: "/blogs", icon: "article" },
@@ -34,11 +38,19 @@ const studentItems: readonly NavigationItem[] = [
 
 const warmedMenus = new Set<string>();
 
-export function SidebarNav() {
+export function SidebarNav({ stage }: { stage: StudentStage | null }) {
   const pathname = usePathname();
   const router = useRouter();
-  const items = studentItems;
-  const menuKey = "student";
+  const stageItem: NavigationItem =
+    stage === "residency_interviews"
+      ? {
+          label: "Interview practice",
+          href: "/interview-practice",
+          icon: "video",
+        }
+      : { label: "Practice tests", href: "/create-test", icon: "test" };
+  const items = [...commonStart, stageItem, ...commonEnd];
+  const menuKey = `student:${stage ?? "unknown"}`;
 
   useEffect(() => {
     if (warmedMenus.has(menuKey)) return;
@@ -127,6 +139,12 @@ function NavIcon({ name }: { name: IconName }) {
       <>
         <path d="m3 10 9-7 9 7" />
         <path d="M5 9v11h14V9M9 20v-6h6v6" />
+      </>
+    ),
+    spotlight: (
+      <>
+        <path d="M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18 12h3M16.3 7.7l2.1-2.1" />
+        <path d="M8 16h8M9 20h6M8 12a4 4 0 1 1 8 0c0 1.7-.8 2.7-1.8 3.7-.5.5-.7.8-.7 1.3h-3c0-.5-.2-.8-.7-1.3C8.8 14.7 8 13.7 8 12Z" />
       </>
     ),
     test: (

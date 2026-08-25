@@ -6,10 +6,12 @@ import { SearchableFilter } from "@/components/resources/searchable-filter";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
   EVENT_FORMATS,
+  EVENT_SCHEDULE_FILTERS,
   EVENT_SORTS,
   EVENTS_PER_PAGE,
   eventDirectoryHref,
   isEventFormat,
+  isEventScheduleFilter,
   isEventSort,
   parseEventFilterOptions,
   RESIDENCY_EVENT_DIRECTORY_COLUMNS,
@@ -29,6 +31,7 @@ export default async function OpenHouseOpportunitiesPage({
     institution?: SearchValue;
     format?: SearchValue;
     location?: SearchValue;
+    schedule?: SearchValue;
     sort?: SearchValue;
   }>;
 }) {
@@ -57,6 +60,10 @@ export default async function OpenHouseOpportunitiesPage({
     : "";
   const requestedFormat = firstValue(requested.format);
   const format = isEventFormat(requestedFormat) ? requestedFormat : "";
+  const requestedSchedule = firstValue(requested.schedule);
+  const schedule = isEventScheduleFilter(requestedSchedule)
+    ? requestedSchedule
+    : "";
   const requestedSort = firstValue(requested.sort);
   const sort = isEventSort(requestedSort) ? requestedSort : "soonest";
   const requestedPage = Number(firstValue(requested.page) || "1");
@@ -70,6 +77,7 @@ export default async function OpenHouseOpportunitiesPage({
         institution,
         format,
         location,
+        schedule,
         sort,
       }),
     );
@@ -79,7 +87,10 @@ export default async function OpenHouseOpportunitiesPage({
   let query = supabase
     .from("residency_event_directory")
     .select(RESIDENCY_EVENT_DIRECTORY_COLUMNS, { count: "exact" })
-    .order("event_date", { ascending: sort === "soonest" })
+    .order("event_date", {
+      ascending: sort === "soonest",
+      nullsFirst: false,
+    })
     .order("start_time", {
       ascending: sort === "soonest",
       nullsFirst: false,
@@ -89,9 +100,11 @@ export default async function OpenHouseOpportunitiesPage({
 
   if (from) query = query.gte("event_date", from);
   if (to) query = query.lte("event_date", to);
-  if (institution) query = query.contains("program_ids", [institution]);
+  if (institution) query = query.contains("institution_keys", [institution]);
   if (format) query = query.eq("format", format);
   if (location) query = query.contains("location_keys", [location]);
+  if (schedule === "dated") query = query.not("event_date", "is", null);
+  if (schedule === "tbd") query = query.is("event_date", null);
 
   const { data, count, error } = await query;
   if (error) throw new Error("Unable to load residency opportunities.");
@@ -107,6 +120,7 @@ export default async function OpenHouseOpportunitiesPage({
         institution,
         format,
         location,
+        schedule,
         sort,
       }),
     );
@@ -115,7 +129,9 @@ export default async function OpenHouseOpportunitiesPage({
   const rows = (data ?? []) as unknown as ResidencyEventDirectoryRow[];
   const firstResult = totalResults === 0 ? 0 : offset + 1;
   const lastResult = Math.min(offset + rows.length, totalResults);
-  const hasFilters = Boolean(from || to || institution || format || location);
+  const hasFilters = Boolean(
+    from || to || institution || format || location || schedule,
+  );
 
   return (
     <AppShell title="Open houses and networking" name={profile.fullName}>
@@ -135,7 +151,7 @@ export default async function OpenHouseOpportunitiesPage({
             {totalResults} matching opportunities
           </span>
           <span className="text-slate-600">
-            Event details checked August 23, 2026
+            Event sources checked through August 24, 2026
           </span>
         </div>
       </section>
@@ -229,6 +245,24 @@ export default async function OpenHouseOpportunitiesPage({
             ))}
           </select>
         </div>
+        <div>
+          <label htmlFor="event-schedule" className={filterLabelClassName}>
+            Date availability
+          </label>
+          <select
+            id="event-schedule"
+            name="schedule"
+            defaultValue={schedule}
+            className={filterInputClassName}
+          >
+            <option value="">Any date status</option>
+            {EVENT_SCHEDULE_FILTERS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex items-end gap-2 md:col-span-2">
           <button type="submit" className="button-primary min-w-28">
             Filter
@@ -265,7 +299,8 @@ export default async function OpenHouseOpportunitiesPage({
               No matching opportunities
             </h3>
             <p className="mt-2 text-slate-600">
-              Try widening the date range or clearing one of the filters.
+              Try widening the date range, including dates to be announced, or
+              clearing one of the filters.
             </p>
           </div>
         )}
@@ -285,6 +320,7 @@ export default async function OpenHouseOpportunitiesPage({
                 institution,
                 format,
                 location,
+                schedule,
                 sort,
               })}
               className={paginationLinkClassName}
@@ -303,6 +339,7 @@ export default async function OpenHouseOpportunitiesPage({
                   institution,
                   format,
                   location,
+                  schedule,
                   sort,
                 })}
                 aria-current={page === requestedPage ? "page" : undefined}
@@ -325,6 +362,7 @@ export default async function OpenHouseOpportunitiesPage({
                 institution,
                 format,
                 location,
+                schedule,
                 sort,
               })}
               className={paginationLinkClassName}

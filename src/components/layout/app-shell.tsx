@@ -2,8 +2,9 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { getCurrentProfile } from "@/lib/auth/guards";
 
-export function AppShell({
+export async function AppShell({
   title,
   name,
   children,
@@ -12,9 +13,10 @@ export function AppShell({
   name: string;
   children: React.ReactNode;
 }) {
+  const profile = await getCurrentProfile();
   return (
     <div className="min-h-screen pb-24 lg:pb-0 lg:pl-72">
-      <SidebarNav />
+      <SidebarNav stage={profile?.studyStage ?? null} />
       <header className="sticky top-0 z-20 border-b border-line/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="lg:hidden">

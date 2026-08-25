@@ -10,6 +10,7 @@ import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
   displayEventValue,
+  eventScheduleDate,
   eventIdSchema,
   formatEventDate,
   formatEventTime,
@@ -58,14 +59,17 @@ export async function ResidencyEventDetailScreen({
   if (context === "tracked" && !tracking) notFound();
 
   const event = data as unknown as ResidencyEventDirectoryRow;
-  const mapQuery = [
-    event.institution_names[0],
-    event.cities[0],
-    event.states[0],
-    "USA",
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const mapQuery =
+    event.format !== "virtual" && event.platform_or_location
+      ? event.platform_or_location
+      : [
+          event.institution_names[0],
+          event.cities[0],
+          event.states[0],
+          "USA",
+        ]
+          .filter(Boolean)
+          .join(", ");
   const mapUrl = mapQuery
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
     : null;
@@ -121,7 +125,7 @@ export async function ResidencyEventDetailScreen({
         <DetailGrid>
           <DetailItem
             label="Event date"
-            value={formatEventDate(event.event_date)}
+            value={eventScheduleDate(event)}
           />
           <DetailItem
             label="Event time"

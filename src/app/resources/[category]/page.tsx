@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { YoutubeVideoCard } from "@/components/resources/youtube-video-card";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import { getResourceCategory } from "@/lib/resources/videos";
+import { getStageDefinition } from "@/lib/stages";
 
 const VIDEOS_PER_PAGE = 10;
 
@@ -18,6 +19,8 @@ export default async function ResourceCategoryPage({
   const { category: categorySlug } = await params;
   const category = getResourceCategory(categorySlug);
   if (!category) notFound();
+  const stage = getStageDefinition(profile.studyStage);
+  if (category.slug !== stage.resourceSlug) redirect("/resources");
 
   const requestedPage = Number((await searchParams).page ?? "1");
   const totalPages = Math.max(

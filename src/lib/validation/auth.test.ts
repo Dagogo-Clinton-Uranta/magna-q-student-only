@@ -3,6 +3,7 @@ import {
   authCredentialsSchema,
   onboardingSchema,
   studentRegistrationSchema,
+  testimonialSchema,
 } from "./auth";
 
 describe("authentication validation", () => {
@@ -76,5 +77,22 @@ describe("authentication validation", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts half-star testimonials and rejects other fractions", () => {
+    const review = {
+      fromStage: "step1",
+      toStage: "step2ck",
+      comment: "The question explanations helped me focus my review.",
+      foundUseful: "yes",
+      wouldRecommend: "yes",
+    };
+
+    expect(
+      testimonialSchema.safeParse({ ...review, rating: "4.5" }).success,
+    ).toBe(true);
+    expect(
+      testimonialSchema.safeParse({ ...review, rating: "4.2" }).success,
+    ).toBe(false);
   });
 });

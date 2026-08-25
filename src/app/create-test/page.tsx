@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { BlockBuilder } from "@/components/study/block-builder";
 import { requirePaidStudent } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
+import { getStageDefinition } from "@/lib/stages";
 
 type CountMap = Record<string, number>;
 
@@ -16,9 +18,12 @@ export default async function CreateTestPage({
     ? `/create-test?exam=${encodeURIComponent(requested)}`
     : "/create-test";
   const { profile } = await requirePaidStudent(returnTo);
-  const examCode = ["step1", "step2ck", "step3"].includes(requested ?? "")
-    ? requested
-    : profile.targetExam;
+  const stage = getStageDefinition(profile.studyStage);
+  if (!stage.examCode) redirect("/interview-practice");
+  const examCode = stage.examCode;
+  if (requested && requested !== examCode) {
+    redirect(`/create-test?exam=${examCode}`);
+  }
   const supabase = await createClient();
   const { data: exam } = await supabase
     .from("exams")

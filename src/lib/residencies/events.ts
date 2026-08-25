@@ -11,6 +11,10 @@ export const RESIDENCY_EVENT_DIRECTORY_COLUMNS = [
   "event_type",
   "event_name",
   "event_date",
+  "published_timing",
+  "listed_institution_name",
+  "listed_specialty",
+  "listed_acgme_id",
   "start_time",
   "end_time",
   "time_zone",
@@ -37,13 +41,18 @@ export const RESIDENCY_EVENT_DIRECTORY_COLUMNS = [
   "cities",
   "states",
   "location_keys",
+  "institution_keys",
 ].join(",");
 
 export type ResidencyEventDirectoryRow = {
   id: string;
   event_type: string;
   event_name: string;
-  event_date: string;
+  event_date: string | null;
+  published_timing: string | null;
+  listed_institution_name: string | null;
+  listed_specialty: string | null;
+  listed_acgme_id: string | null;
   start_time: string | null;
   end_time: string | null;
   time_zone: string | null;
@@ -70,6 +79,7 @@ export type ResidencyEventDirectoryRow = {
   cities: string[];
   states: string[];
   location_keys: string[];
+  institution_keys: string[];
 };
 
 export type ResidencyEventFilterOptions = ResidencyFilterOptions & {
@@ -88,8 +98,15 @@ export const EVENT_SORTS = [
   { value: "latest", label: "Date: latest first" },
 ] as const;
 
+export const EVENT_SCHEDULE_FILTERS = [
+  { value: "dated", label: "Exact date available" },
+  { value: "tbd", label: "Date to be announced" },
+] as const;
+
 export type EventFormatFilter = (typeof EVENT_FORMATS)[number]["value"];
 export type EventSort = (typeof EVENT_SORTS)[number]["value"];
+export type EventScheduleFilter =
+  (typeof EVENT_SCHEDULE_FILTERS)[number]["value"];
 
 export const eventIdSchema = z.string().uuid();
 export const eventNotesSchema = z.object({
@@ -103,6 +120,12 @@ export function isEventFormat(value: string): value is EventFormatFilter {
 
 export function isEventSort(value: string): value is EventSort {
   return EVENT_SORTS.some((option) => option.value === value);
+}
+
+export function isEventScheduleFilter(
+  value: string,
+): value is EventScheduleFilter {
+  return EVENT_SCHEDULE_FILTERS.some((option) => option.value === value);
 }
 
 export function parseEventFilterOptions(
@@ -143,6 +166,7 @@ export function eventDirectoryHref({
   institution,
   format,
   location,
+  schedule,
   sort,
 }: {
   page: number;
@@ -151,6 +175,7 @@ export function eventDirectoryHref({
   institution?: string;
   format?: string;
   location?: string;
+  schedule?: string;
   sort?: string;
 }) {
   const params = new URLSearchParams();
@@ -159,6 +184,7 @@ export function eventDirectoryHref({
   if (institution) params.set("institution", institution);
   if (format) params.set("format", format);
   if (location) params.set("location", location);
+  if (schedule) params.set("schedule", schedule);
   if (sort && sort !== "soonest") params.set("sort", sort);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
@@ -166,15 +192,25 @@ export function eventDirectoryHref({
 }
 
 export function formatEventDate(
-  value: string,
+  value: string | null,
   style: "short" | "long" = "long",
 ) {
+  if (!value) return "Date to be announced";
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: style === "short" ? "short" : "long",
     day: "numeric",
     timeZone: "UTC",
   }).format(new Date(`${value}T00:00:00Z`));
+}
+
+export function eventScheduleDate(
+  event: Pick<ResidencyEventDirectoryRow, "event_date" | "published_timing">,
+  style: "short" | "long" = "long",
+) {
+  return event.event_date
+    ? formatEventDate(event.event_date, style)
+    : event.published_timing || "Date to be announced";
 }
 
 export function formatEventTime(

@@ -10,8 +10,8 @@ loadEnvConfig(process.cwd());
 const DEFAULT_CSV =
   "00_all_specialties_verified_open_house_events_2026-08-23.csv";
 const RESEARCH_NOTE =
-  "Upcoming applicant event found during 2026-08-23 residency event research sweep.";
-const EXPECTED_HEADERS = [
+  "Applicant event found during a residency event research sweep.";
+const FULL_EVENT_HEADERS = [
   "acgme_id",
   "program_name",
   "specialty",
@@ -40,6 +40,48 @@ const EXPECTED_HEADERS = [
   "match_method",
   "match_confidence",
 ] as const;
+const ANESTHESIOLOGY_UNDATED_HEADERS = [
+  "program_name",
+  "specialty",
+  "event_type",
+  "published_timing",
+  "source_url",
+  "reason_not_in_import_csv",
+] as const;
+const FAMILY_MEDICINE_UNDATED_HEADERS = [
+  "program_name",
+  "acgme_id_if_confirmed",
+  "event_type",
+  "published_timing",
+  "event_scope",
+  "source_url",
+  "verification_notes",
+] as const;
+const SPECIALTY_SCOPED_UNDATED_HEADERS = [
+  "program_name",
+  "acgme_id_if_confirmed",
+  "specialty",
+  "event_type",
+  "published_timing",
+  "event_scope",
+  "source_url",
+  "verification_notes",
+] as const;
+const INTERNAL_MEDICINE_UNDATED_HEADERS = [
+  "program_name",
+  "acgme_id_if_confirmed",
+  "event_type",
+  "published_timing",
+  "source_url",
+  "reason_not_in_import_csv",
+] as const;
+type CsvHeader =
+  | (typeof FULL_EVENT_HEADERS)[number]
+  | (typeof ANESTHESIOLOGY_UNDATED_HEADERS)[number]
+  | (typeof FAMILY_MEDICINE_UNDATED_HEADERS)[number]
+  | (typeof SPECIALTY_SCOPED_UNDATED_HEADERS)[number]
+  | (typeof INTERNAL_MEDICINE_UNDATED_HEADERS)[number];
+type RawCsvRow = Record<CsvHeader, string>;
 
 const eventStatuses = [
   "upcoming",
@@ -56,12 +98,16 @@ type EventFormat = (typeof eventFormats)[number];
 
 type ParsedEventRow = {
   rowNumber: number;
-  acgme_id: string;
+  acgme_id: string | null;
   program_name: string;
   specialty: string;
   event_type: string;
   event_name: string;
-  event_date: string;
+  event_date: string | null;
+  published_timing: string | null;
+  listed_institution_name: string;
+  listed_specialty: string;
+  listed_acgme_id: string | null;
   start_time: string | null;
   end_time: string | null;
   time_zone: string | null;
@@ -95,7 +141,7 @@ type Program = {
 type ExistingEvent = {
   id: string;
   event_name: string;
-  event_date: string;
+  event_date: string | null;
   source_url: string;
 };
 
@@ -178,7 +224,7 @@ function optionalUrl(value: string, field: string) {
 function eventIdentity(
   row: Pick<ParsedEventRow, "event_name" | "event_date" | "source_url">,
 ) {
-  return `${row.event_name}\u0000${row.event_date}\u0000${row.source_url}`;
+  return `${row.event_name}\u0000${row.event_date ?? "<undated>"}\u0000${row.source_url}`;
 }
 
 function parseCsv(csvPath: string) {
@@ -189,10 +235,8 @@ function parseCsv(csvPath: string) {
   }) as string[][];
 
   const [headers, ...rows] = matrix;
-  if (
-    !headers ||
-    JSON.stringify(headers) !== JSON.stringify(EXPECTED_HEADERS)
-  ) {
+  const csvShape = identifyCsvShape(headers);
+  if (!headers || !csvShape) {
     throw new Error(
       `CSV headers do not match the expected schema. Received: ${headers?.join(", ") ?? "none"}`,
     );
@@ -205,81 +249,22 @@ function parseCsv(csvPath: string) {
   rows.forEach((values, index) => {
     const rowNumber = index + 2;
     try {
-      if (values.length !== EXPECTED_HEADERS.length) {
+      if (values.length !== headers.length) {
         throw new Error(
-          `expected ${EXPECTED_HEADERS.length} columns; received ${values.length}`,
+          `expected ${headers.length} columns; received ${values.length}`,
         );
       }
       const raw = Object.fromEntries(
-        EXPECTED_HEADERS.map((header, column) => [
-          header,
-          values[column] ?? "",
-        ]),
-      ) as Record<(typeof EXPECTED_HEADERS)[number], string>;
-      const eventDate = dateSchema.parse(
-        required(raw.event_date, "event_date"),
-      );
-      const checkedDate = dateSchema.parse(
-        required(raw.date_checked, "date_checked"),
-      );
-      const sourceUrl = httpUrlSchema.parse(
-        required(raw.source_url, "source_url"),
-      );
-      const startTime = optionalText(raw.start_time);
-      const endTime = optionalText(raw.end_time);
-      if (startTime) timeSchema.parse(startTime);
-      if (endTime) timeSchema.parse(endTime);
-      const format = optionalText(raw.format);
-      if (format && !eventFormats.includes(format as EventFormat)) {
-        throw new Error(`format has unsupported value “${format}”`);
+        headers.map((header, column) => [header, values[column] ?? ""]),
+      ) as RawCsvRow;
+      if (csvShape === "full" && !raw.source_verified.trim()) {
+        blankSourceVerifiedCount += 1;
       }
-      const status = required(raw.status, "status");
-      if (!eventStatuses.includes(status as EventStatus)) {
-        throw new Error(`status has unsupported value “${status}”`);
-      }
-      const confidenceText = optionalText(raw.match_confidence);
-      const confidence =
-        confidenceText === null ? null : Number(confidenceText);
-      if (
-        confidence !== null &&
-        (!Number.isFinite(confidence) || confidence < 0 || confidence > 1)
-      ) {
-        throw new Error("match_confidence must be between 0 and 1");
-      }
-      if (!raw.source_verified.trim()) blankSourceVerifiedCount += 1;
-
-      validRows.push({
-        rowNumber,
-        acgme_id: required(raw.acgme_id, "acgme_id"),
-        program_name: required(raw.program_name, "program_name"),
-        specialty: required(raw.specialty, "specialty"),
-        event_type: required(raw.event_type, "event_type"),
-        event_name: required(raw.event_name, "event_name"),
-        event_date: eventDate,
-        start_time: startTime,
-        end_time: endTime,
-        time_zone: optionalText(raw.time_zone),
-        format: format as EventFormat | null,
-        platform_or_location: optionalText(raw.platform_or_location),
-        event_scope: optionalText(raw.event_scope),
-        who_can_attend: optionalText(raw.who_can_attend),
-        program_leadership_present: nullableBoolean(
-          raw.program_leadership_present,
-        ),
-        residents_present: nullableBoolean(raw.residents_present),
-        qa_available: nullableBoolean(raw.qa_available),
-        registration_required: nullableBoolean(raw.registration_required),
-        registration_url: optionalUrl(raw.registration_url, "registration_url"),
-        event_url: optionalUrl(raw.event_url, "event_url"),
-        status: status as EventStatus,
-        source_verified: sourceVerifiedBoolean(raw.source_verified),
-        source_type: optionalText(raw.source_type),
-        source_url: sourceUrl,
-        date_checked: checkedDate,
-        notes: optionalText(raw.notes),
-        match_method: optionalText(raw.match_method),
-        match_confidence: confidence,
-      });
+      validRows.push(
+        csvShape === "full"
+          ? parseFullEventRow(raw, rowNumber, csvPath)
+          : parseUndatedLeadRow(raw, rowNumber, csvShape, csvPath),
+      );
     } catch (error) {
       invalidRows.push({
         rowNumber,
@@ -295,6 +280,202 @@ function parseCsv(csvPath: string) {
     total: rows.length,
   };
 }
+
+function identifyCsvShape(headers: string[] | undefined) {
+  if (!headers) return null;
+  if (sameHeaders(headers, FULL_EVENT_HEADERS)) return "full" as const;
+  if (sameHeaders(headers, ANESTHESIOLOGY_UNDATED_HEADERS)) {
+    return "anesthesiology-undated" as const;
+  }
+  if (sameHeaders(headers, FAMILY_MEDICINE_UNDATED_HEADERS)) {
+    return "scoped-undated" as const;
+  }
+  if (sameHeaders(headers, SPECIALTY_SCOPED_UNDATED_HEADERS)) {
+    return "scoped-undated" as const;
+  }
+  if (sameHeaders(headers, INTERNAL_MEDICINE_UNDATED_HEADERS)) {
+    return "unscoped-undated-with-acgme" as const;
+  }
+  return null;
+}
+
+function sameHeaders(actual: string[], expected: readonly string[]) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function parseFullEventRow(
+  raw: RawCsvRow,
+  rowNumber: number,
+  csvPath: string,
+): ParsedEventRow {
+  const eventDateText = optionalText(raw.event_date);
+  const eventDate = eventDateText ? dateSchema.parse(eventDateText) : null;
+  const checkedDateText = optionalText(raw.date_checked);
+  const checkedDate = checkedDateText
+    ? dateSchema.parse(checkedDateText)
+    : checkedDateFromFilename(csvPath);
+  const sourceUrl = httpUrlSchema.parse(
+    required(raw.source_url, "source_url"),
+  );
+  const startTime = optionalText(raw.start_time);
+  const endTime = optionalText(raw.end_time);
+  if (startTime) timeSchema.parse(startTime);
+  if (endTime) timeSchema.parse(endTime);
+  const format = optionalText(raw.format);
+  if (format && !eventFormats.includes(format as EventFormat)) {
+    throw new Error(`format has unsupported value “${format}”`);
+  }
+  const status = optionalText(raw.status) ?? "upcoming";
+  if (!eventStatuses.includes(status as EventStatus)) {
+    throw new Error(`status has unsupported value “${status}”`);
+  }
+  const confidenceText = optionalText(raw.match_confidence);
+  const confidence = confidenceText === null ? null : Number(confidenceText);
+  if (
+    confidence !== null &&
+    (!Number.isFinite(confidence) || confidence < 0 || confidence > 1)
+  ) {
+    throw new Error("match_confidence must be between 0 and 1");
+  }
+  const acgmeId = optionalText(raw.acgme_id);
+  const programName = required(raw.program_name, "program_name");
+  const specialty = required(raw.specialty, "specialty");
+
+  return {
+    rowNumber,
+    acgme_id: acgmeId,
+    program_name: programName,
+    specialty,
+    event_type: required(raw.event_type, "event_type"),
+    event_name: required(raw.event_name, "event_name"),
+    event_date: eventDate,
+    published_timing: null,
+    listed_institution_name: programName,
+    listed_specialty: specialty,
+    listed_acgme_id: acgmeId,
+    start_time: startTime,
+    end_time: endTime,
+    time_zone: optionalText(raw.time_zone),
+    format: format as EventFormat | null,
+    platform_or_location: optionalText(raw.platform_or_location),
+    event_scope: optionalText(raw.event_scope),
+    who_can_attend: optionalText(raw.who_can_attend),
+    program_leadership_present: nullableBoolean(
+      raw.program_leadership_present,
+    ),
+    residents_present: nullableBoolean(raw.residents_present),
+    qa_available: nullableBoolean(raw.qa_available),
+    registration_required: nullableBoolean(raw.registration_required),
+    registration_url: optionalUrl(raw.registration_url, "registration_url"),
+    event_url: optionalUrl(raw.event_url, "event_url"),
+    status: status as EventStatus,
+    source_verified: sourceVerifiedBoolean(raw.source_verified),
+    source_type: optionalText(raw.source_type),
+    source_url: sourceUrl,
+    date_checked: checkedDate,
+    notes: optionalText(raw.notes),
+    match_method: optionalText(raw.match_method),
+    match_confidence: confidence,
+  };
+}
+
+function parseUndatedLeadRow(
+  raw: RawCsvRow,
+  rowNumber: number,
+  shape:
+    | "anesthesiology-undated"
+    | "scoped-undated"
+    | "unscoped-undated-with-acgme",
+  csvPath: string,
+): ParsedEventRow {
+  const programName = required(raw.program_name, "program_name");
+  const specialty = inferUndatedSpecialty(raw, csvPath);
+  const eventType = required(raw.event_type, "event_type");
+  const publishedTiming = required(raw.published_timing, "published_timing");
+  const sourceUrl = httpUrlSchema.parse(
+    required(raw.source_url, "source_url"),
+  );
+  const acgmeId = optionalText(raw.acgme_id_if_confirmed ?? "");
+  const notes = optionalText(
+    shape === "scoped-undated"
+      ? raw.verification_notes
+      : raw.reason_not_in_import_csv,
+  );
+  const sourceVerified = path
+    .basename(csvPath)
+    .includes("_undated_verified_leads_");
+
+  return {
+    rowNumber,
+    acgme_id: acgmeId,
+    program_name: programName,
+    specialty,
+    event_type: eventType,
+    event_name: `${programName}: ${eventTypeLabel(eventType)}`,
+    event_date: null,
+    published_timing: publishedTiming,
+    listed_institution_name: programName,
+    listed_specialty: specialty,
+    listed_acgme_id: acgmeId,
+    start_time: null,
+    end_time: null,
+    time_zone: null,
+    format: inferUndatedFormat(eventType),
+    platform_or_location: null,
+    event_scope: optionalText(raw.event_scope ?? ""),
+    who_can_attend: null,
+    program_leadership_present: null,
+    residents_present: null,
+    qa_available: null,
+    registration_required: null,
+    registration_url: null,
+    event_url: sourceUrl,
+    status: "upcoming",
+    source_verified: sourceVerified,
+    source_type: sourceVerified
+      ? "verified_undated_lead"
+      : "unverified_undated_lead",
+    source_url: sourceUrl,
+    date_checked: checkedDateFromFilename(csvPath),
+    notes,
+    match_method: acgmeId ? "source_confirmed_acgme_id" : null,
+    match_confidence: acgmeId ? 1 : null,
+  };
+}
+
+function inferUndatedSpecialty(raw: RawCsvRow, csvPath: string) {
+  const supplied = optionalText(raw.specialty ?? "");
+  if (supplied) return supplied;
+  const filename = path.basename(csvPath).toLowerCase();
+  if (filename.includes("internal_medicine")) return "Internal Medicine";
+  if (filename.includes("family_medicine")) return "Family Medicine";
+  if (filename.includes("pediatrics")) return "Pediatrics";
+  if (filename.includes("neurology")) return "Neurology";
+  throw new Error("specialty is required or must be inferable from the filename");
+}
+
+function eventTypeLabel(eventType: string) {
+  return eventType
+    .split("_")
+    .filter(Boolean)
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
+function inferUndatedFormat(eventType: string): EventFormat | null {
+  if (eventType.includes("virtual")) return "virtual";
+  if (eventType.includes("in_person") || eventType === "campus_visit") {
+    return "in_person";
+  }
+  return null;
+}
+
+function checkedDateFromFilename(csvPath: string) {
+  const dates = path.basename(csvPath).match(/\d{4}-\d{2}-\d{2}/g);
+  const value = dates?.at(0) ?? new Date().toISOString().slice(0, 10);
+  return dateSchema.parse(value);
+}
+
 
 function chunks<T>(values: T[], size: number) {
   const result: T[][] = [];
@@ -322,14 +503,18 @@ async function findExistingEvents(
   rows: ParsedEventRow[],
 ) {
   if (rows.length === 0) return new Map<string, ExistingEvent>();
-  const dates = rows.map((row) => row.event_date).sort();
-  const result = await supabase
-    .from("residency_events")
-    .select("id,event_name,event_date,source_url")
-    .gte("event_date", dates[0]!)
-    .lte("event_date", dates.at(-1)!);
-  if (result.error) throw result.error;
-  const events = (result.data ?? []) as ExistingEvent[];
+  const events: ExistingEvent[] = [];
+  for (const batch of chunks(
+    [...new Set(rows.map((row) => row.source_url))],
+    100,
+  )) {
+    const result = await supabase
+      .from("residency_events")
+      .select("id,event_name,event_date,source_url")
+      .in("source_url", batch);
+    if (result.error) throw result.error;
+    events.push(...((result.data ?? []) as ExistingEvent[]));
+  }
   return new Map(events.map((event) => [eventIdentity(event), event]));
 }
 
@@ -378,8 +563,8 @@ function printSummary(
 ) {
   console.log(`\nResidency Event Import ${dryRun ? "Dry Run" : "Complete"}\n`);
   console.log(`CSV rows processed: ${summary.csvRowsProcessed}`);
-  console.log(`Residencies matched: ${summary.residenciesMatched}`);
-  console.log(`Residencies unmatched: ${summary.residenciesUnmatched}`);
+  console.log(`Rows linked to existing residencies: ${summary.residenciesMatched}`);
+  console.log(`Rows imported without a residency link: ${summary.residenciesUnmatched}`);
   console.log(`Events inserted: ${summary.eventsInserted}`);
   console.log(`Events updated: ${summary.eventsUpdated}`);
   console.log(`Program-event links created: ${summary.linksCreated}`);
@@ -393,10 +578,10 @@ function printSummary(
   console.log(`Errors: ${summary.errors}`);
 
   if (unmatched.length > 0) {
-    console.log("\nUnmatched programs:");
+    console.log("\nEvents imported without a residency link:");
     for (const row of unmatched) {
       console.log(
-        `- ACGME ${row.acgme_id} | ${row.program_name} | ${row.specialty} | ${row.event_name}`,
+        `- ACGME ${row.acgme_id ?? "not supplied"} | ${row.program_name} | ${row.specialty} | ${row.event_name}`,
       );
     }
   }
@@ -432,25 +617,28 @@ async function main() {
   const parsed = parseCsv(csvPath);
   const programs = await findPrograms(
     supabase,
-    parsed.validRows.map((row) => row.acgme_id),
+    parsed.validRows.flatMap((row) => (row.acgme_id ? [row.acgme_id] : [])),
   );
   const matchedRows = parsed.validRows.filter((row) =>
-    programs.has(row.acgme_id),
+    row.acgme_id ? programs.has(row.acgme_id) : false,
   );
   const unmatchedRows = parsed.validRows.filter(
-    (row) => !programs.has(row.acgme_id),
+    (row) => !row.acgme_id || !programs.has(row.acgme_id),
   );
-  const existingEvents = await findExistingEvents(supabase, matchedRows);
+  const existingEvents = await findExistingEvents(supabase, parsed.validRows);
   const existingLinks = await findExistingLinks(
     supabase,
     [...existingEvents.values()].map((event) => event.id),
   );
-  const uniqueEventIdentities = new Set(matchedRows.map(eventIdentity));
-  const duplicateEventCount = matchedRows.length - uniqueEventIdentities.size;
+  const uniqueEventIdentities = new Set(parsed.validRows.map(eventIdentity));
+  const duplicateEventCount = parsed.validRows.length - uniqueEventIdentities.size;
   const uniqueResearchPrograms = new Set(
     matchedRows
       .filter((row) => row.status === "upcoming")
-      .map((row) => programs.get(row.acgme_id)!.id),
+      .flatMap((row) => {
+        const program = row.acgme_id ? programs.get(row.acgme_id) : undefined;
+        return program ? [program.id] : [];
+      }),
   );
   const processedPairs = new Set<string>();
 
@@ -471,11 +659,11 @@ async function main() {
     errors: 0,
   };
 
-  for (const row of matchedRows) {
-    const program = programs.get(row.acgme_id)!;
+  for (const row of parsed.validRows) {
+    const program = row.acgme_id ? programs.get(row.acgme_id) : undefined;
     const identity = eventIdentity(row);
     const event = existingEvents.get(identity);
-    const pairKey = `${identity}\u0000${program.id}`;
+    const pairKey = `${identity}\u0000${program?.id ?? "<unlinked>"}`;
     if (processedPairs.has(pairKey)) {
       summary.existingLinksSkipped += 1;
       continue;
@@ -483,17 +671,18 @@ async function main() {
     processedPairs.add(pairKey);
 
     if (dryRun) {
-      const linkKey = event ? `${event.id}\u0000${program.id}` : null;
+      const linkKey =
+        event && program ? `${event.id}\u0000${program.id}` : null;
       if (linkKey && existingLinks.has(linkKey)) {
         summary.existingLinksSkipped += 1;
-      } else {
+      } else if (program) {
         summary.linksCreated += 1;
       }
       continue;
     }
 
     const result = await supabase.rpc("import_residency_event_row", {
-      p_acgme_id: row.acgme_id,
+      p_acgme_id: row.acgme_id ?? "",
       p_event: eventPayload(row),
       p_match_method: row.match_method,
       p_match_confidence: row.match_confidence,
@@ -505,12 +694,9 @@ async function main() {
       continue;
     }
     const imported = result.data as ImportResult;
-    if (!imported.matched) {
-      summary.errors += 1;
-      console.error(`Row ${row.rowNumber} lost its ACGME match during import.`);
-    } else if (imported.link_created) {
+    if (imported.link_created) {
       summary.linksCreated += 1;
-    } else {
+    } else if (imported.matched) {
       summary.existingLinksSkipped += 1;
     }
   }

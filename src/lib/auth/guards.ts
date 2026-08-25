@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DEMO_AUTH_BYPASS_ENABLED } from "@/lib/auth/demo";
 import { PAYMENTS_ENABLED } from "@/config/features";
 import { sanitizeReturnPath } from "@/lib/payments/return-path";
+import type { StudentStage } from "@/lib/stages";
 import { createClient } from "@/lib/supabase/server";
 
 export type UserRole = "student";
@@ -13,6 +14,7 @@ export type CurrentProfile = {
   username: string;
   role: UserRole;
   onboardingCompleted: boolean;
+  studyStage: StudentStage;
   targetExam: "step1" | "step2ck" | "step3";
   monthlyPayment: "paid" | "unpaid";
 };
@@ -38,6 +40,7 @@ export const getCurrentProfile = cache(
         username: "demo_student",
         role: "student",
         onboardingCompleted: true,
+        studyStage: "step2ck",
         targetExam: "step2ck",
         // Demo authentication is explicitly enabled by an environment flag and
         // has no corresponding billing row. Keep product demos usable without
@@ -51,7 +54,7 @@ export const getCurrentProfile = cache(
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, username, full_name, role, onboarding_completed, target_exam, monthly_payment",
+        "id, username, full_name, role, onboarding_completed, study_stage, target_exam, monthly_payment",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -62,6 +65,7 @@ export const getCurrentProfile = cache(
       username: data.username as string,
       role: data.role as UserRole,
       onboardingCompleted: data.onboarding_completed as boolean,
+      studyStage: (data.study_stage ?? data.target_exam) as StudentStage,
       targetExam: data.target_exam as CurrentProfile["targetExam"],
       monthlyPayment: data.monthly_payment as CurrentProfile["monthlyPayment"],
     };
@@ -147,6 +151,14 @@ export async function requirePaidStudent(returnTo: string) {
     );
   }
   return { profile, entitlement };
+}
+
+export async function requireResidencyStageStudent(returnTo: string) {
+  const access = await requirePaidStudent(returnTo);
+  if (access.profile.studyStage !== "residency_interviews") {
+    redirect("/dashboard");
+  }
+  return access;
 }
 
 export function profileHome(role: UserRole) {

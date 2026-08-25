@@ -12,6 +12,10 @@ of the populated `residencies` directory. `residency_events` stores event facts,
 `residency_event_programs` supports events spanning multiple programs, and
 `residency_event_research_status` distinguishes a completed search with no event
 found from a program that has not yet been checked or needs another review.
+Event dates and program links are optional: undated opportunities retain their
+source-published timing text, while standalone or unmatched events retain their
+source-provided institution, specialty, and optional ACGME labels directly on
+the event record.
 
 Questions can belong to one or more subjects but must belong to exactly one
 system (stored in the legacy `categories` tables). The create-test filter treats

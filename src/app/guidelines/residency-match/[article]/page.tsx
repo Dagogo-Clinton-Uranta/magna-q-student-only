@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { GuidelineArticle } from "@/components/guidelines/guideline-article";
 import { requireRole } from "@/lib/auth/guards";
@@ -11,6 +11,7 @@ export default async function ResidencyGuidelineArticlePage({
   params: Promise<{ article: string }>;
 }) {
   const profile = await requireRole(["student"]);
+  if (profile.studyStage !== "residency_interviews") redirect("/guidelines");
   const { article: slug } = await params;
   const supabase = await createClient();
   const { data, error } = await supabase

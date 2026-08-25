@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createBlockSchema } from "@/lib/validation/study";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
+import { getStageDefinition } from "@/lib/stages";
 
 export async function POST(request: Request) {
   const access = await getPaidStudentApiAccess("/create-test");
@@ -26,6 +27,23 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   const supabase = await createClient();
+  const expectedExamCode = getStageDefinition(profile.studyStage).examCode;
+  if (!expectedExamCode)
+    return NextResponse.json(
+      { error: "Practice tests are not available at your current stage." },
+      { status: 403 },
+    );
+  const { data: allowedExam } = await supabase
+    .from("exams")
+    .select("id")
+    .eq("id", parsed.data.examId)
+    .eq("code", expectedExamCode)
+    .maybeSingle();
+  if (!allowedExam)
+    return NextResponse.json(
+      { error: "This exam does not match your current stage." },
+      { status: 403 },
+    );
   const { data, error } = await supabase.rpc("student_create_block_v2", {
     selected_exam_id: parsed.data.examId,
     selected_mode: parsed.data.mode,

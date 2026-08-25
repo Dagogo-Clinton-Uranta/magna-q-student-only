@@ -4,31 +4,47 @@ import { ResumeBlockButton } from "@/components/study/resume-block-button";
 import { BlogCard, type BlogSummary } from "@/components/blog/blog-card";
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
+import { getStageDefinition } from "@/lib/stages";
 
 type PerformanceRow = { name: string; attempts: number; correct: number };
 export default async function DashboardPage() {
   const profile = await requireRole(["student"]);
   const supabase = await createClient();
-  const [{ data: blocks }, { data: analytics }, { data: blogPosts }] =
-    await Promise.all([
-      supabase
-        .from("test_blocks")
-        .select(
-          "id,mode,status,actual_question_count,current_position,created_at",
-        )
-        .in("status", ["created", "in_progress", "suspended"])
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabase.rpc("student_dashboard_summary"),
-      supabase
-        .from("blog_posts")
-        .select(
-          "id,title,paragraph_1,category,author_name,published_at,image_urls,image_alt_texts",
-        )
-        .eq("published", true)
-        .order("published_at", { ascending: false })
-        .limit(2),
-    ]);
+  const stage = getStageDefinition(profile.studyStage);
+  const [{ data: currentExam }, { data: blogPosts }] = await Promise.all([
+    stage.examCode
+      ? supabase
+          .from("exams")
+          .select("id")
+          .eq("code", stage.examCode)
+          .eq("active", true)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("blog_posts")
+      .select(
+        "id,title,paragraph_1,category,author_name,published_at,image_urls,image_alt_texts",
+      )
+      .eq("published", true)
+      .order("published_at", { ascending: false })
+      .limit(2),
+  ]);
+  const [{ data: blocks }, { data: analytics }] = currentExam
+    ? await Promise.all([
+        supabase
+          .from("test_blocks")
+          .select(
+            "id,mode,status,actual_question_count,current_position,created_at",
+          )
+          .eq("exam_id", currentExam.id)
+          .in("status", ["created", "in_progress", "suspended"])
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase.rpc("student_dashboard_summary_for_exam", {
+          selected_exam_id: currentExam.id,
+        }),
+      ])
+    : [{ data: [] }, { data: {} }];
   const summary = (analytics ?? {}) as {
     totalAnswered?: number;
     overallPctCorrect?: number | null;
@@ -47,13 +63,19 @@ export default async function DashboardPage() {
       <section className="mt-8 border border-brand-200 bg-soft p-6 sm:p-8">
         <p className="eyebrow">Your next step</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
-          Welcome to your study space
+          Your {stage.shortLabel} workspace
         </h2>
         <p className="mt-3 max-w-2xl text-muted">
-          Continue an active block or take the next step toward residency.
+          {stage.description}. Change your current stage from your profile
+          whenever your focus changes.
         </p>
-        <Link href="/create-test" className="button-primary mt-6">
-          Create a practice test{" "}
+        <Link
+          href={stage.examCode ? "/create-test" : "/interview-practice"}
+          className="button-primary mt-6"
+        >
+          {stage.examCode
+            ? "Create a practice test"
+            : "Practice for interviews"}{" "}
           <span aria-hidden="true" className="ml-2">
             →
           </span>
@@ -64,61 +86,56 @@ export default async function DashboardPage() {
           <div>
             <p className="eyebrow">Choose your path</p>
             <h2 className="mt-2 text-2xl font-normal tracking-[0.02em] text-ink">
-              Your path from licensing to the Match
+              Content for {stage.label}
             </h2>
           </div>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <StudyPath
-            title="USMLE Step 1"
-            description="Foundational science in clinical context"
-            href="/create-test?exam=step1"
-            index="01"
-          />
-          <StudyPath
-            title="USMLE Step 2 CK"
-            description="Patient care under clinical supervision"
-            href="/create-test?exam=step2ck"
-            index="02"
-          />
-          <StudyPath
-            title="USMLE Step 3"
-            description="Independent clinical decision-making"
-            href="/create-test?exam=step3"
-            index="03"
-          />
-          <StudyPath
-            title="Interview practice"
-            description="Residency tips and guided sessions"
-            href="/interview-practice"
-            index="04"
-          />
-          <StudyPath
-            title="Residency & Match"
-            description="Timelines, applications, ranking and next steps"
-            href="/guidelines"
-            index="05"
-          />
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {stage.examCode ? (
+            <StudyPath
+              title={stage.label}
+              description={stage.description}
+              href="/create-test"
+              index={`0${stage.rank}`}
+            />
+          ) : (
+            <>
+              <StudyPath
+                title="Interview practice"
+                description="Residency tips and guided sessions"
+                href="/interview-practice"
+                index="04"
+              />
+              <StudyPath
+                title="Residency & Match"
+                description="Applications, ranking, and Match milestones"
+                href="/guidelines"
+                index="04"
+              />
+            </>
+          )}
         </div>
       </section>
-      <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Metric
-          label="Questions answered"
-          value={String(summary.totalAnswered ?? 0)}
-        />
-        <Metric
-          label="Overall correct"
-          value={
-            summary.overallPctCorrect == null
-              ? "—"
-              : `${summary.overallPctCorrect}%`
-          }
-        />
-        <Metric
-          label="Marked questions"
-          value={String(summary.markedCount ?? 0)}
-        />
-      </section>
+      {stage.examCode && (
+        <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Metric
+            label="Questions answered"
+            value={String(summary.totalAnswered ?? 0)}
+          />
+          <Metric
+            label="Overall correct"
+            value={
+              summary.overallPctCorrect == null
+                ? "—"
+                : `${summary.overallPctCorrect}%`
+            }
+          />
+          <Metric
+            label="Marked questions"
+            value={String(summary.markedCount ?? 0)}
+          />
+        </section>
+      )}
       {blocks && blocks.length > 0 && (
         <section className="mt-6">
           <h2 className="text-xl font-normal tracking-[0.02em]">
@@ -154,49 +171,53 @@ export default async function DashboardPage() {
           </div>
         </section>
       )}
-      <div className="mt-6 grid gap-5 lg:grid-cols-2">
-        <Performance
-          title="Subject performance"
-          rows={summary.subjects ?? []}
-        />
-        <Performance
-          title="Category performance"
-          rows={summary.categories ?? []}
-        />
-      </div>
-      <section className="card mt-6 p-5">
-        <h2 className="text-xl font-normal tracking-[0.02em]">
-          Previous blocks
-        </h2>
-        <ul className="mt-3 divide-y divide-line">
-          {(summary.recentBlocks ?? []).map((block) => (
-            <li
-              key={block.id}
-              className="flex items-center justify-between gap-3 py-3"
-            >
-              <div>
-                <p className="font-semibold capitalize">
-                  {block.mode} · {block.actual_question_count} questions
-                </p>
-                <p className="text-sm capitalize text-muted">
-                  {block.status.replaceAll("_", " ")}
-                </p>
-              </div>
-              {block.status === "completed" && (
-                <Link
-                  href={`/study/block/${block.id}/results`}
-                  className="font-semibold text-brand-700"
-                >
-                  Results
-                </Link>
-              )}
-            </li>
-          ))}
-          {(summary.recentBlocks ?? []).length === 0 && (
-            <li className="py-4 text-muted">No previous blocks yet.</li>
-          )}
-        </ul>
-      </section>
+      {stage.examCode && (
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <Performance
+            title="Subject performance"
+            rows={summary.subjects ?? []}
+          />
+          <Performance
+            title="Category performance"
+            rows={summary.categories ?? []}
+          />
+        </div>
+      )}
+      {stage.examCode && (
+        <section className="card mt-6 p-5">
+          <h2 className="text-xl font-normal tracking-[0.02em]">
+            Previous blocks
+          </h2>
+          <ul className="mt-3 divide-y divide-line">
+            {(summary.recentBlocks ?? []).map((block) => (
+              <li
+                key={block.id}
+                className="flex items-center justify-between gap-3 py-3"
+              >
+                <div>
+                  <p className="font-semibold capitalize">
+                    {block.mode} · {block.actual_question_count} questions
+                  </p>
+                  <p className="text-sm capitalize text-muted">
+                    {block.status.replaceAll("_", " ")}
+                  </p>
+                </div>
+                {block.status === "completed" && (
+                  <Link
+                    href={`/study/block/${block.id}/results`}
+                    className="font-semibold text-brand-700"
+                  >
+                    Results
+                  </Link>
+                )}
+              </li>
+            ))}
+            {(summary.recentBlocks ?? []).length === 0 && (
+              <li className="py-4 text-muted">No previous blocks yet.</li>
+            )}
+          </ul>
+        </section>
+      )}
       <section className="mt-8">
         <div className="flex items-center justify-between gap-4">
           <div>

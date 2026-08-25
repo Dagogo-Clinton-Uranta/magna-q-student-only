@@ -8,15 +8,18 @@ import {
   RESIDENCY_DIRECTORY_COLUMNS,
   type ResidencyDirectoryRow,
 } from "@/lib/residencies/directory";
-import { RESOURCE_CATEGORIES } from "@/lib/resources/videos";
+import { getResourceCategory } from "@/lib/resources/videos";
 import {
   RESIDENCY_EVENT_DIRECTORY_COLUMNS,
   type ResidencyEventDirectoryRow,
 } from "@/lib/residencies/events";
 import { createClient } from "@/lib/supabase/server";
+import { getStageDefinition } from "@/lib/stages";
 
 export default async function ResourcesPage() {
   const profile = await requireOnboardedProfile();
+  const stage = getStageDefinition(profile.studyStage);
+  const category = getResourceCategory(stage.resourceSlug)!;
   const supabase = await createClient();
   const [{ data: residencyRows }, { data: eventRows }] = await Promise.all([
     supabase
@@ -28,9 +31,11 @@ export default async function ResourcesPage() {
     supabase
       .from("residency_event_directory")
       .select(RESIDENCY_EVENT_DIRECTORY_COLUMNS)
-      .gte("event_date", new Date().toISOString().slice(0, 10))
+      .or(
+        `event_date.gte.${new Date().toISOString().slice(0, 10)},event_date.is.null`,
+      )
       .eq("status", "upcoming")
-      .order("event_date", { ascending: true })
+      .order("event_date", { ascending: true, nullsFirst: false })
       .order("start_time", { ascending: true, nullsFirst: false })
       .range(0, 4),
   ]);
@@ -43,11 +48,11 @@ export default async function ResourcesPage() {
       <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
         <p className="eyebrow">Learning and application resources</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
-          Practical tools for your USMLE and residency journey
+          Practical tools for {stage.label}
         </h2>
         <p className="mt-3 max-w-3xl leading-7 text-muted">
-          Explore residency-program information and selected video lessons for
-          exam preparation and interviews without leaving Magna-Q.
+          Your learning videos are focused on your current stage. Residency
+          programs and applicant events remain available at every stage.
         </p>
       </section>
 
@@ -95,7 +100,7 @@ export default async function ResourcesPage() {
           Open houses and networking opportunities
         </h2>
         <p className="mt-2 max-w-3xl leading-7 text-slate-600">
-          Find verified applicant open houses, information sessions, resident
+          Find researched applicant open houses, information sessions, resident
           Q&amp;As, and networking events. Compare dates and formats, then save
           the opportunities that matter to your application plan.
         </p>
@@ -117,31 +122,29 @@ export default async function ResourcesPage() {
         </Link>
       </section>
 
-      {RESOURCE_CATEGORIES.map((category) => (
-        <section
-          key={category.slug}
-          className="mt-10 border-b border-slate-200 pb-10 last:border-0"
-          aria-labelledby={`${category.slug}-title`}
+      <section
+        className="mt-10 border-b border-slate-200 pb-10 last:border-0"
+        aria-labelledby={`${category.slug}-title`}
+      >
+        <p className="eyebrow">Stage {stage.rank} learning</p>
+        <h2 id={`${category.slug}-title`} className="mt-2 text-2xl font-black">
+          {category.title}
+        </h2>
+        <p className="mt-2 max-w-3xl leading-7 text-slate-600">
+          {category.description}
+        </p>
+        <div className="mt-5 grid gap-6 md:grid-cols-2">
+          {category.videos.slice(0, 2).map((video) => (
+            <YoutubeVideoCard key={video.id} video={video} />
+          ))}
+        </div>
+        <Link
+          href={`/resources/${category.slug}`}
+          className="button-primary mt-6"
         >
-          <h2 id={`${category.slug}-title`} className="text-2xl font-black">
-            {category.title}
-          </h2>
-          <p className="mt-2 max-w-3xl leading-7 text-slate-600">
-            {category.description}
-          </p>
-          <div className="mt-5 grid gap-6 md:grid-cols-2">
-            {category.videos.slice(0, 2).map((video) => (
-              <YoutubeVideoCard key={video.id} video={video} />
-            ))}
-          </div>
-          <Link
-            href={`/resources/${category.slug}`}
-            className="button-primary mt-6"
-          >
-            View more {category.title} videos →
-          </Link>
-        </section>
-      ))}
+          View more {category.title} videos →
+        </Link>
+      </section>
     </AppShell>
   );
 }

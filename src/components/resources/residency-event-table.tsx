@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   displayEventValue,
-  formatEventDate,
+  eventScheduleDate,
   formatEventTime,
   type ResidencyEventDirectoryRow,
 } from "@/lib/residencies/events";
@@ -79,14 +79,16 @@ export function ResidencyEventTable({
               </td>
               <td className="whitespace-nowrap px-4 py-4 text-slate-800">
                 <p className="font-semibold">
-                  {formatEventDate(event.event_date, "short")}
+                  {eventScheduleDate(event, "short")}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {formatEventTime(
-                    event.start_time,
-                    event.end_time,
-                    event.time_zone,
-                  )}
+                  {event.event_date
+                    ? formatEventTime(
+                        event.start_time,
+                        event.end_time,
+                        event.time_zone,
+                      )
+                    : "Exact date to be announced"}
                 </p>
               </td>
               <td className="px-4 py-4">

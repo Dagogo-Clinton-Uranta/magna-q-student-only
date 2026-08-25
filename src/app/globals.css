@@ -223,6 +223,19 @@ html.dark .text-slate-400 {
   visibility: visible;
 }
 
+html.content-capture-active .protected-content {
+  filter: none !important;
+  visibility: hidden !important;
+}
+
+html.content-capture-active .content-protection-overlay {
+  pointer-events: auto !important;
+  display: block !important;
+  background: #fff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
 @media print {
   html.content-protected .protected-content {
     display: none !important;

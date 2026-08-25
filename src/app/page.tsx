@@ -4,6 +4,8 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/public/site-header";
 import { Reveal } from "@/components/ui/motion";
 import { appConfig } from "@/config/app";
+import type { CommunityFeature } from "@/lib/features/types";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: `${appConfig.name} | From licensing exams to the Match`,
@@ -89,7 +91,14 @@ const faqs = [
   ],
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: rawSpotlight } = await supabase
+    .from("community_features")
+    .select("*")
+    .eq("front_page_feature", true)
+    .maybeSingle();
+  const spotlight = rawSpotlight as CommunityFeature | null;
   return (
     <>
       <SiteHeader />
@@ -240,6 +249,71 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+
+        {spotlight && (
+          <section className="border-y border-line bg-soft">
+            <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
+              <Reveal>
+                <div className="max-w-4xl">
+                  <p className="eyebrow">Community, brought forward</p>
+                  <h2 className="mt-4 text-3xl font-normal tracking-[0.02em] text-ink sm:text-5xl">
+                    Your next collaborator may already be here.
+                  </h2>
+                  <p className="mt-5 text-lg leading-8 text-muted">
+                    At every stage of the licensing process, Magna-Q gives
+                    students and doctors a place to share meaningful work, find
+                    their people, and move from the background to the center of
+                    the community.
+                  </p>
+                </div>
+              </Reveal>
+              <Reveal className="mt-10" delay={0.08}>
+                <article className="grid overflow-hidden border border-line bg-field shadow-lift lg:grid-cols-[1.05fr_.95fr]">
+                  <div className="min-h-80 overflow-hidden bg-canvas">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={spotlight.image_url}
+                      alt={spotlight.image_alt_text}
+                      className="h-full min-h-80 w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-center p-7 sm:p-10">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-xs font-bold uppercase tracking-widest text-brand-700">
+                        Front-page feature
+                      </p>
+                      {spotlight.is_sample && (
+                        <span className="rounded-full bg-soft px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
+                          Sample spotlight
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="mt-3 text-2xl font-normal leading-snug text-ink sm:text-3xl">
+                      {spotlight.title}
+                    </h3>
+                    <blockquote className="mt-5 border-l-2 border-brand-500 pl-4 text-lg italic leading-8 text-brand-900">
+                      “{spotlight.representative_quote}”
+                    </blockquote>
+                    <p className="mt-5 line-clamp-4 leading-7 text-muted">
+                      {spotlight.summary}
+                    </p>
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
+                      <span className="font-semibold text-brand-800">
+                        @{spotlight.username}
+                      </span>
+                      <Link
+                        href={`/get-featured/${spotlight.id}`}
+                        className="button-primary"
+                      >
+                        Read their feature
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              </Reveal>
+            </div>
+          </section>
+        )}
 
         <section className="border-y border-line bg-field">
           <div className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:py-28">

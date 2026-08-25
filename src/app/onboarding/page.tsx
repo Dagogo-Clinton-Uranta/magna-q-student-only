@@ -92,7 +92,9 @@ export default async function OnboardingPage({
               <option value="step1">USMLE Step 1</option>
               <option value="step2ck">USMLE Step 2 CK</option>
               <option value="step3">USMLE Step 3</option>
-              <option value="residency_interviews">Residency interviews</option>
+              <option value="residency_interviews">
+                Residency interviews &amp; Match
+              </option>
             </select>
           </label>
           <label>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { StageRankSelector } from "@/components/profile/stage-rank-selector";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { getCurrentUser, requireOnboardedProfile } from "@/lib/auth/guards";
 import { COUNTRIES } from "@/lib/countries";
@@ -100,6 +101,8 @@ export default async function ProfilePage({
         </div>
       )}
 
+      <StageRankSelector initialStage={studyStage} />
+
       <section className="mt-8 border border-slate-200 bg-white p-6 sm:p-8">
         <p className="eyebrow">Account information</p>
         <h2 className="mt-2 text-2xl">Student details</h2>
@@ -150,19 +153,6 @@ export default async function ProfilePage({
               aria-readonly="true"
               className="input cursor-not-allowed bg-slate-100 text-muted"
             />
-          </ProfileField>
-          <ProfileField label="Current stage">
-            <select
-              name="studyStage"
-              required
-              defaultValue={studyStage}
-              className="input"
-            >
-              <option value="step1">USMLE Step 1</option>
-              <option value="step2ck">USMLE Step 2 CK</option>
-              <option value="step3">USMLE Step 3</option>
-              <option value="residency_interviews">Residency interviews</option>
-            </select>
           </ProfileField>
           <ProfileField label="Country of residence">
             <select

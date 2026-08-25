@@ -18,6 +18,8 @@ const serverSchema = publicSchema.extend({
   AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   AWS_S3_BUCKET: z.string().min(1).optional(),
   AWS_S3_ENDPOINT: z.string().url().optional(),
+  AWS_FEATURES_S3_BUCKET: z.string().min(1).optional(),
+  AWS_FEATURES_S3_PUBLIC_URL: z.string().url().optional(),
   // Stripe secrets are optional at application startup so local non-billing
   // pages still work. Billing entry points validate the complete trio before
   // making any Stripe API call.
@@ -69,6 +71,12 @@ export function getServerEnv(): ServerEnv {
     ),
     AWS_S3_BUCKET: optionalEnvironmentValue(process.env.AWS_S3_BUCKET),
     AWS_S3_ENDPOINT: optionalEnvironmentValue(process.env.AWS_S3_ENDPOINT),
+    AWS_FEATURES_S3_BUCKET: optionalEnvironmentValue(
+      process.env.AWS_FEATURES_S3_BUCKET,
+    ),
+    AWS_FEATURES_S3_PUBLIC_URL: optionalEnvironmentValue(
+      process.env.AWS_FEATURES_S3_PUBLIC_URL,
+    ),
     STRIPE_SECRET_KEY: optionalEnvironmentValue(process.env.STRIPE_SECRET_KEY),
     STRIPE_WEBHOOK_SECRET: optionalEnvironmentValue(
       process.env.STRIPE_WEBHOOK_SECRET,

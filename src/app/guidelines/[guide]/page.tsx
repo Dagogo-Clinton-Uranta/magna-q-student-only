@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { ChronologicalTimeline } from "@/components/guidelines/chronological-timeline";
 import { requireRole } from "@/lib/auth/guards";
@@ -13,6 +13,7 @@ import {
   parseGuidelineSummary,
 } from "@/lib/guidelines/articles";
 import { createClient } from "@/lib/supabase/server";
+import { getStageDefinition } from "@/lib/stages";
 
 export function generateStaticParams() {
   return guides.map((guide) => ({ guide: guide.slug }));
@@ -26,6 +27,9 @@ export default async function GuidePage({
   const profile = await requireRole(["student"]);
   const guide = getGuide((await params).guide);
   if (!guide) notFound();
+  if (guide.slug !== getStageDefinition(profile.studyStage).guideSlug) {
+    redirect("/guidelines");
+  }
   const guidelineArticles = await getGuidelineArticles(guide.slug);
   return (
     <AppShell title="Timelines and Guidelines" name={profile.fullName}>

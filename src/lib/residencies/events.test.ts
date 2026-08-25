@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   eventDirectoryHref,
+  eventScheduleDate,
   eventIdSchema,
   eventNotesSchema,
   formatEventTime,
@@ -41,6 +42,18 @@ describe("residency event directory helpers", () => {
       "6:00 PM–7:30 PM ET",
     );
     expect(formatEventTime(null, null, "ET")).toBe("Time to be confirmed");
+  });
+
+  it("uses published timing when an exact event date is unavailable", () => {
+    expect(
+      eventScheduleDate({
+        event_date: null,
+        published_timing: "Late January 2027",
+      }),
+    ).toBe("Late January 2027");
+    expect(
+      eventScheduleDate({ event_date: null, published_timing: null }),
+    ).toBe("Date to be announced");
   });
 
   it("validates event IDs and private-note limits", () => {

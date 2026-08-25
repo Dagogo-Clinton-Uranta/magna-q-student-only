@@ -3,9 +3,14 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { requireRole } from "@/lib/auth/guards";
 import { guides } from "@/lib/guidelines/guides";
+import { getStageDefinition } from "@/lib/stages";
 
 export default async function GuidelinesPage() {
   const profile = await requireRole(["student"]);
+  const stage = getStageDefinition(profile.studyStage);
+  const visibleGuides = guides.filter(
+    (guide) => guide.slug === stage.guideSlug,
+  );
   return (
     <AppShell title="Timelines and Guidelines" name={profile.fullName}>
       <section className="relative mt-6 overflow-hidden border border-brand-200 bg-soft p-6 sm:p-9">
@@ -22,10 +27,9 @@ export default async function GuidelinesPage() {
             A clear map from medical school to residency.
           </h2>
           <p className="mt-4 max-w-xl leading-7 text-muted">
-            Use these guides to understand what each USMLE Step is for, how
-            registration and scheduling work, and how the residency Match fits
-            together. They are planning aids—not a substitute for the official
-            rules that apply on your test date.
+            Your workspace currently focuses on {stage.label}. This planning
+            guide changes automatically when you update your current stage in
+            your profile.
           </p>
         </div>
       </section>
@@ -40,10 +44,10 @@ export default async function GuidelinesPage() {
       </section>
       <section className="mt-10">
         <p className="text-sm font-bold uppercase tracking-widest text-blue-700">
-          Choose your stage
+          Your current stage
         </p>
         <div className="mt-4 grid gap-5 md:grid-cols-2">
-          {guides.map((guide, index) => (
+          {visibleGuides.map((guide) => (
             <Link
               key={guide.slug}
               href={`/guidelines/${guide.slug}`}
@@ -51,7 +55,7 @@ export default async function GuidelinesPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 font-black text-blue-800">
-                  {index + 1}
+                  {stage.rank}
                 </span>
                 <span className="text-sm font-bold text-blue-800 group-hover:underline">
                   Open guide →

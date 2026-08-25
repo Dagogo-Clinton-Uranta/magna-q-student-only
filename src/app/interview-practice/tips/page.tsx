@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { InterviewTipsAccordion } from "@/components/interview/interview-tips-accordion";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { requireResidencyStageStudent } from "@/lib/auth/guards";
 
 export default async function InterviewTipsPage() {
-  const { profile } = await requirePaidStudent("/interview-practice/tips");
+  const { profile } = await requireResidencyStageStudent(
+    "/interview-practice/tips",
+  );
   return (
     <AppShell title="Common interview tips" name={profile.fullName}>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">

@@ -8,11 +8,15 @@ import {
   residencyNotesSchema,
 } from "@/lib/residencies/tracking";
 import { createClient } from "@/lib/supabase/server";
-import { editableStudentProfileSchema } from "@/lib/validation/auth";
+import {
+  editableStudentDetailsSchema,
+  studyStageChangeSchema,
+  testimonialSchema,
+} from "@/lib/validation/auth";
 
 export async function updateStudentProfile(formData: FormData) {
   const profile = await requireOnboardedProfile();
-  const parsed = editableStudentProfileSchema.safeParse({
+  const parsed = editableStudentDetailsSchema.safeParse({
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     countryCode: formData.get("countryCode"),
@@ -20,17 +24,12 @@ export async function updateStudentProfile(formData: FormData) {
     phoneNumber: formData.get("phoneNumber"),
     medicalSchool: formData.get("medicalSchool") || undefined,
     trainingLevel: formData.get("trainingLevel") || undefined,
-    studyStage: formData.get("studyStage"),
   });
 
   if (!parsed.success) {
     redirect("/profile?error=Review+the+profile+details+and+try+again.");
   }
 
-  const targetExam =
-    parsed.data.studyStage === "residency_interviews"
-      ? "step2ck"
-      : parsed.data.studyStage;
   const supabase = await createClient();
   const { error } = await supabase
     .from("profiles")
@@ -43,8 +42,6 @@ export async function updateStudentProfile(formData: FormData) {
       phone_number: parsed.data.phoneNumber,
       medical_school: parsed.data.medicalSchool || null,
       training_level: parsed.data.trainingLevel || null,
-      study_stage: parsed.data.studyStage,
-      target_exam: targetExam,
     })
     .eq("id", profile.id);
 
@@ -54,6 +51,101 @@ export async function updateStudentProfile(formData: FormData) {
 
   revalidatePath("/profile");
   redirect("/profile?updated=1");
+}
+
+export async function changeStudyStage(formData: FormData) {
+  const profile = await requireOnboardedProfile();
+  const parsed = studyStageChangeSchema.safeParse({
+    studyStage: formData.get("studyStage"),
+  });
+  if (!parsed.success) {
+    return { ok: false as const, error: "Choose a valid current stage." };
+  }
+
+  const fromStage = profile.studyStage;
+  const toStage = parsed.data.studyStage;
+  if (fromStage === toStage) {
+    return {
+      ok: false as const,
+      error: "That is already your current stage.",
+    };
+  }
+
+  const targetExam = toStage === "residency_interviews" ? "step2ck" : toStage;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ study_stage: toStage, target_exam: targetExam })
+    .eq("id", profile.id);
+
+  if (error) {
+    return {
+      ok: false as const,
+      error: "We could not change your stage. Please try again.",
+    };
+  }
+
+  revalidateStagePaths();
+  return { ok: true as const, fromStage, toStage };
+}
+
+export async function submitStageTestimonial(formData: FormData) {
+  const profile = await requireOnboardedProfile();
+  const parsed = testimonialSchema.safeParse({
+    fromStage: formData.get("fromStage"),
+    toStage: formData.get("toStage"),
+    comment: formData.get("comment"),
+    rating: formData.get("rating"),
+    foundUseful: formData.get("foundUseful"),
+    wouldRecommend: formData.get("wouldRecommend"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false as const,
+      error:
+        parsed.error.issues[0]?.message ??
+        "Review your testimonial and try again.",
+    };
+  }
+  if (parsed.data.toStage !== profile.studyStage) {
+    return {
+      ok: false as const,
+      error:
+        "Your current stage changed. Refresh before submitting this review.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("submit_stage_testimonial", {
+    p_from_stage: parsed.data.fromStage,
+    p_to_stage: parsed.data.toStage,
+    p_comment: parsed.data.comment,
+    p_rating: parsed.data.rating,
+    p_found_useful: answerToBoolean(parsed.data.foundUseful),
+    p_would_recommend: answerToBoolean(parsed.data.wouldRecommend),
+  });
+  if (error) {
+    return {
+      ok: false as const,
+      error: "We could not save your review. Please try again.",
+    };
+  }
+  return { ok: true as const };
+}
+
+function answerToBoolean(value: "yes" | "no" | "unsure") {
+  if (value === "yes") return true;
+  if (value === "no") return false;
+  return null;
+}
+
+function revalidateStagePaths() {
+  revalidatePath("/profile");
+  revalidatePath("/dashboard");
+  revalidatePath("/create-test");
+  revalidatePath("/interview-practice");
+  revalidatePath("/resources");
+  revalidatePath("/guidelines");
 }
 
 export async function trackResidency(formData: FormData) {

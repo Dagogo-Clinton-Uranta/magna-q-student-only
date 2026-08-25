@@ -52,3 +52,26 @@ export const editableStudentProfileSchema = studentProfileSchema.omit({
   username: true,
   acceptedTerms: true,
 });
+
+export const editableStudentDetailsSchema = editableStudentProfileSchema.omit({
+  studyStage: true,
+});
+
+export const studyStageChangeSchema = z.object({
+  studyStage: studentProfileSchema.shape.studyStage,
+});
+
+export const testimonialSchema = z.object({
+  fromStage: studentProfileSchema.shape.studyStage,
+  toStage: studentProfileSchema.shape.studyStage,
+  comment: z.string().trim().min(3).max(5000),
+  rating: z.coerce
+    .number()
+    .min(0.5)
+    .max(5)
+    .refine((value) => Number.isInteger(value * 2), {
+      message: "Choose a whole- or half-star rating.",
+    }),
+  foundUseful: z.enum(["yes", "no", "unsure"]),
+  wouldRecommend: z.enum(["yes", "no", "unsure"]),
+});

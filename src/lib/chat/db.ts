@@ -46,7 +46,9 @@ export type NotificationType =
   | "private_group_approved"
   | "private_group_denied"
   | "private_group_deleted"
-  | "private_group_member_added";
+  | "private_group_member_added"
+  | "feature_pulse"
+  | "feature_comment";
 export type Notification = {
   recipientId: string;
   type: NotificationType;
@@ -54,6 +56,7 @@ export type Notification = {
   body: string;
   href: string;
   relatedGroupId?: string;
+  relatedFeatureId?: string;
   readAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -138,12 +141,15 @@ const NotificationSchema = new Schema<Notification>(
         "private_group_denied",
         "private_group_deleted",
         "private_group_member_added",
+        "feature_pulse",
+        "feature_comment",
       ],
     },
     title: { type: String, required: true },
     body: { type: String, required: true },
     href: { type: String, required: true },
     relatedGroupId: String,
+    relatedFeatureId: String,
     readAt: Date,
   },
   { timestamps: true },
