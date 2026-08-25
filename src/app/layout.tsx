@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-page-custom-font -- The source Figma font is loaded at runtime so production builds do not depend on a font download. */
 import type { Metadata } from "next";
 import { ConditionalSiteFooter } from "@/components/layout/site-footer";
 import { ContentProtection } from "@/components/security/content-protection";
@@ -22,18 +21,6 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var p=location.pathname;var excluded=p==='/login'||p==='/onboarding';var dark=localStorage.getItem('magna-q-theme')==='dark'&&!excluded;document.documentElement.classList.toggle('dark',dark)}catch(e){}})()`,
           }}
-        />
-        {/* Tenor Sans is the source Figma system's typeface. This stylesheet
-            keeps the build independent of font downloads at compile time. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Tenor+Sans&display=swap"
-          rel="stylesheet"
         />
       </head>
       <body>

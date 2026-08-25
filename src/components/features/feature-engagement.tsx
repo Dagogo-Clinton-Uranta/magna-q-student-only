@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   submitFeatureComment,
@@ -10,6 +10,12 @@ import { PulseIcon } from "@/components/features/pulse-icon";
 import type { FeatureComment } from "@/lib/features/types";
 
 type Suggestion = { username: string; is_featured_member: boolean };
+type Notice = {
+  ok: boolean;
+  text: string;
+  kind: "pulse" | "comment";
+  id: number;
+};
 
 export function FeatureEngagement({
   featureId,
@@ -28,20 +34,34 @@ export function FeatureEngagement({
   const [pending, startTransition] = useTransition();
   const [pulsed, setPulsed] = useState(initiallyPulsed);
   const [pulseCount, setPulseCount] = useState(initialPulseCount);
+  const [pulseBeat, setPulseBeat] = useState(0);
   const [content, setContent] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [mentionStart, setMentionStart] = useState<number | null>(null);
-  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(
-    null,
-  );
+  const [notice, setNotice] = useState<Notice | null>(null);
+
+  useEffect(() => {
+    if (!notice?.ok || notice.kind !== "pulse") return;
+    const noticeId = notice.id;
+    const timer = window.setTimeout(() => {
+      setNotice((current) => (current?.id === noticeId ? null : current));
+    }, 1_000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
 
   function togglePulse() {
     startTransition(async () => {
       const result = await toggleFeaturePulse(featureId);
-      setNotice({ ok: result.ok, text: result.message });
+      setNotice({
+        ok: result.ok,
+        text: result.message,
+        kind: "pulse",
+        id: Date.now(),
+      });
       if (result.ok) {
         setPulsed(Boolean(result.pulsed));
         setPulseCount(result.count ?? pulseCount);
+        setPulseBeat((current) => current + 1);
       }
     });
   }
@@ -79,7 +99,12 @@ export function FeatureEngagement({
     formData.set("content", content);
     startTransition(async () => {
       const result = await submitFeatureComment(formData);
-      setNotice({ ok: result.ok, text: result.message });
+      setNotice({
+        ok: result.ok,
+        text: result.message,
+        kind: "comment",
+        id: Date.now(),
+      });
       if (result.ok) {
         setContent("");
         setSuggestions([]);
@@ -108,9 +133,14 @@ export function FeatureEngagement({
           onClick={togglePulse}
           disabled={pending}
           aria-pressed={pulsed}
-          className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-5 text-sm font-bold transition ${pulsed ? "border-emerald-600 bg-emerald-600 text-white" : "border-brand-300 bg-field text-brand-800 hover:bg-soft"}`}
+          className={`feature-pulse-button inline-flex min-h-12 items-center gap-2.5 border px-5 text-sm font-bold shadow-card transition ${pulsed ? "border-emerald-600 bg-emerald-600 text-white shadow-emerald-900/20" : "border-brand-300 bg-field text-brand-800 hover:border-brand-500 hover:bg-soft"}`}
         >
-          <PulseIcon />
+          <span
+            key={pulseBeat}
+            className={pulseBeat > 0 ? "feature-pulse-beat" : undefined}
+          >
+            <PulseIcon className="h-7 w-7" />
+          </span>
           {pulseCount} {pulseCount === 1 ? "pulse" : "pulses"}
         </button>
       </div>
@@ -118,7 +148,7 @@ export function FeatureEngagement({
       {notice && (
         <div
           role="status"
-          className={`mt-5 px-4 py-3 text-sm font-semibold ${notice.ok ? "bg-emerald-600 text-white" : "bg-red-50 text-red-800"}`}
+          className={`mt-5 px-4 py-3 text-sm font-semibold ${notice.ok ? "bg-emerald-600 text-white" : "bg-red-50 text-red-800"} ${notice.ok && notice.kind === "pulse" ? "feature-pulse-notice" : ""}`}
         >
           {notice.text}
         </div>

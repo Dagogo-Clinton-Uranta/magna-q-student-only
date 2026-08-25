@@ -236,7 +236,12 @@ export function FeatureSubmissionForm({
         />
       </label>
       <div>
-        <p className="text-sm font-semibold text-body">Project image</p>
+        <p className="text-sm font-semibold text-body">Your feature portrait</p>
+        <p className="mt-1 text-sm leading-6 text-muted">
+          Choose a friendly photo with your face clearly visible, looking at the
+          camera and smiling. A natural picture that feels like your own works
+          best.
+        </p>
         <div
           onDragEnter={(event) => {
             event.preventDefault();
@@ -305,8 +310,13 @@ export function FeatureSubmissionForm({
           value={draft.imageAltText}
           onChange={(event) => update("imageAltText", event.target.value)}
           className="input mt-2 w-full"
-          placeholder="For example: Two medical students reviewing a research poster"
+          placeholder="For example: A smiling doctor in blue scrubs looking at the camera"
+          aria-describedby="feature-image-description-help"
         />
+        <span id="feature-image-description-help" className="sr-only">
+          Describe the person, their smile, clothing and setting without
+          guessing identity or personal characteristics.
+        </span>
       </label>
       <p className="text-sm leading-6 text-muted">
         Your draft is saved in this browser while you move around Magna-Q.

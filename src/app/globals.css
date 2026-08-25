@@ -38,9 +38,9 @@
   --color-field: 249 249 249;
   --color-line: 222 222 222;
 
-  --font-sans: "Tenor Sans", "Aptos", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Aptos", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-display:
-    "Tenor Sans", "Aptos Display", "Segoe UI", system-ui, sans-serif;
+    "Aptos Display", "Segoe UI", system-ui, -apple-system, sans-serif;
   --radius-sm: 0.125rem;
   --radius-md: 0.25rem;
   --radius-lg: 0.375rem;
@@ -136,6 +136,48 @@ html.dark {
   .settings-toggle__thumb {
     border-radius: 9999px;
   }
+  .feature-pulse-button {
+    border-radius: 9999px !important;
+  }
+}
+
+@keyframes feature-pulse-beat {
+  0% {
+    transform: scale(1);
+  }
+  22% {
+    transform: scale(1.48);
+  }
+  42% {
+    transform: scale(0.9);
+  }
+  62% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes feature-pulse-notice-fade {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.feature-pulse-beat {
+  display: inline-flex;
+  transform-origin: center;
+  animation: feature-pulse-beat 680ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.feature-pulse-notice {
+  animation: feature-pulse-notice-fade 1s ease-out forwards;
 }
 
 html[data-player-font="large"] {
