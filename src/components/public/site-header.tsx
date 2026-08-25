@@ -27,7 +27,7 @@ export function SiteHeader() {
         </nav>
         <div className="hidden items-center gap-2 sm:flex">
           <Link href="/login" className="button-secondary text-sm">
-            Student login
+            Login
           </Link>
           <Link href="/login?mode=signup" className="button-primary text-sm">
             Get started
@@ -67,7 +67,7 @@ export function SiteHeader() {
               Get started
             </Link>
             <Link href="/login" className="button-ghost">
-              Student login
+              Login
             </Link>
           </div>
         </nav>

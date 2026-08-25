@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { PulseIcon } from "@/components/features/pulse-icon";
-import { countValue, type CommunityFeature } from "@/lib/features/types";
+import {
+  countValue,
+  featurePortraitPosition,
+  type CommunityFeature,
+} from "@/lib/features/types";
 
 export function FeatureCard({ feature }: { feature: CommunityFeature }) {
   return (
@@ -11,7 +15,7 @@ export function FeatureCard({ feature }: { feature: CommunityFeature }) {
         <img
           src={feature.image_url}
           alt={feature.image_alt_text}
-          className="h-full w-full object-cover transition duration-300 hover:scale-105"
+          className={`h-full w-full object-cover transition duration-300 hover:scale-105 ${featurePortraitPosition(feature.id)}`}
         />
       </div>
       <div className="flex flex-1 flex-col p-5">
@@ -19,11 +23,6 @@ export function FeatureCard({ feature }: { feature: CommunityFeature }) {
           <p className="text-xs font-bold uppercase tracking-widest text-brand-700">
             Community spotlight
           </p>
-          {feature.is_sample && (
-            <span className="rounded-full bg-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
-              Sample
-            </span>
-          )}
         </div>
         <h3 className="mt-2 text-xl font-bold leading-snug text-ink">
           {feature.title}

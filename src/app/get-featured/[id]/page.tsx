@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
   countValue,
+  featurePortraitPosition,
   type CommunityFeature,
   type FeatureComment,
 } from "@/lib/features/types";
@@ -61,18 +62,11 @@ export default async function FeatureDetailPage({
           <img
             src={feature.image_url}
             alt={feature.image_alt_text}
-            className="h-full max-h-[34rem] w-full object-cover"
+            className={`h-full max-h-[34rem] w-full object-cover ${featurePortraitPosition(feature.id)}`}
           />
         </div>
         <div className="p-6 sm:p-10">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="eyebrow">Featured community project</p>
-            {feature.is_sample && (
-              <span className="rounded-full bg-soft px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted">
-                Sample spotlight
-              </span>
-            )}
-          </div>
+          <p className="eyebrow">Featured community project</p>
           <h1 className="mt-4 max-w-4xl text-3xl font-normal leading-tight tracking-[0.02em] text-ink sm:text-5xl">
             {feature.title}
           </h1>

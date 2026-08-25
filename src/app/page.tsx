@@ -4,7 +4,10 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/public/site-header";
 import { Reveal } from "@/components/ui/motion";
 import { appConfig } from "@/config/app";
-import type { CommunityFeature } from "@/lib/features/types";
+import {
+  featurePortraitPosition,
+  type CommunityFeature,
+} from "@/lib/features/types";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -274,20 +277,13 @@ export default async function HomePage() {
                     <img
                       src={spotlight.image_url}
                       alt={spotlight.image_alt_text}
-                      className="h-full min-h-80 w-full object-cover"
+                      className={`h-full min-h-80 w-full object-cover ${featurePortraitPosition(spotlight.id)}`}
                     />
                   </div>
                   <div className="flex flex-col justify-center p-7 sm:p-10">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <p className="text-xs font-bold uppercase tracking-widest text-brand-700">
-                        Front-page feature
-                      </p>
-                      {spotlight.is_sample && (
-                        <span className="rounded-full bg-soft px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
-                          Sample spotlight
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-brand-700">
+                      This week&apos;s top feature
+                    </p>
                     <h3 className="mt-3 text-2xl font-normal leading-snug text-ink sm:text-3xl">
                       {spotlight.title}
                     </h3>
