@@ -144,6 +144,9 @@ export function FeatureEngagement({
           {pulseCount} {pulseCount === 1 ? "pulse" : "pulses"}
         </button>
       </div>
+      <p className="mt-4 text-sm leading-6 text-muted">
+        The feature with the most pulses will appear on the website homepage.
+      </p>
 
       {notice && (
         <div

@@ -7,7 +7,6 @@ import { getGuide, guides } from "@/lib/guidelines/guides";
 import { StepOneApplicationGuide } from "@/components/guidelines/step-one-application-guide";
 import { ResidencyMatchPlanner } from "@/components/guidelines/residency-match-planner";
 import {
-  getGuidelineCardPlacement,
   guidelineCardClassName,
   guidelineCardGridClassName,
   parseGuidelineSummary,
@@ -135,32 +134,45 @@ export default async function GuidePage({
             ))}
           </ul>
         </div>
-        {guidelineArticles.map((article) => (
-          <Link
-            key={article.id}
-            href={`/guidelines/residency-match/${article.slug}`}
-            className={`group ${guidelineCardClassName} border border-brand-300 bg-soft transition hover:-translate-y-0.5 hover:border-brand-600 hover:shadow-lg ${getGuidelineCardPlacement(article.slug)}`}
-          >
-            <p className="eyebrow">Guideline article</p>
-            <h2 className="mt-2 text-xl font-bold text-ink">{article.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-muted">
-              {article.summary}
-            </p>
-            <ul className="mt-4 space-y-2 text-sm leading-6 text-body">
-              {article.summary_points.map((point) => (
-                <li key={point} className="flex gap-2">
-                  <span aria-hidden="true" className="text-brand-700">
-                    •
-                  </span>
-                  <span>{point}</span>
-                </li>
-              ))}
-            </ul>
-            <span className="mt-auto inline-flex pt-5 font-bold text-brand-800 group-hover:underline">
-              Read the full guide →
-            </span>
-          </Link>
-        ))}
+        {guidelineArticles.map((article, index) => {
+          const residencyPalette =
+            index % 2 === 0
+              ? "border-brand-300 bg-soft hover:border-brand-600"
+              : "border-slate-300 bg-slate-100 hover:border-slate-500";
+          const cardPalette =
+            guide.slug === "residency-match"
+              ? residencyPalette
+              : "border-brand-300 bg-soft hover:border-brand-600";
+
+          return (
+            <Link
+              key={article.id}
+              href={`/guidelines/${guide.slug}/${article.slug}`}
+              className={`group ${guidelineCardClassName} border transition hover:-translate-y-0.5 hover:shadow-lg ${cardPalette}`}
+            >
+              <p className="eyebrow">Guideline article</p>
+              <h2 className="mt-2 text-xl font-bold text-ink">
+                {article.title}
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-muted">
+                {article.summary}
+              </p>
+              <ul className="mt-4 space-y-2 text-sm leading-6 text-body">
+                {article.summary_points.map((point) => (
+                  <li key={point} className="flex gap-2">
+                    <span aria-hidden="true" className="text-brand-700">
+                      •
+                    </span>
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+              <span className="mt-auto inline-flex pt-5 font-bold text-brand-800 group-hover:underline">
+                Read the full guide →
+              </span>
+            </Link>
+          );
+        })}
       </section>
       {guide.slug === "step-1" && <StepOneApplicationGuide />}
     </AppShell>
@@ -168,16 +180,24 @@ export default async function GuidePage({
 }
 
 async function getGuidelineArticles(guideSlug: string) {
-  if (guideSlug !== "residency-match") return [];
+  const classificationByGuide = {
+    "step-1": "usmle-step-1",
+    "step-2-ck": "usmle-step-2-ck",
+    "step-3": "usmle-step-3",
+    "residency-match": "residency-and-matching",
+  } as const;
+  const classification =
+    classificationByGuide[guideSlug as keyof typeof classificationByGuide];
+  if (!classification) return [];
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("guidelines")
     .select("id,slug,title,summary,summary_points,classification,published_at")
-    .eq("classification", "residency-and-matching")
+    .eq("classification", classification)
     .eq("published", true)
     .order("published_at", { ascending: false });
 
-  if (error) throw new Error("Unable to load residency guideline articles.");
+  if (error) throw new Error("Unable to load guideline articles.");
   return (data ?? []).map(parseGuidelineSummary);
 }

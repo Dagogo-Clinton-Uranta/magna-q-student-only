@@ -34,6 +34,10 @@ export default async function GetFeaturedPage() {
           organizing. Our team reviews every request and selects projects that
           can inspire collaborators at every stage of the licensing journey.
         </p>
+        <p className="mt-3 max-w-3xl text-lg leading-8 text-muted">
+          Share your research papers, hypotheses, or anything you want extra
+          visibility on.
+        </p>
         <FeatureSubmissionForm
           userId={profile.id}
           username={profile.username}

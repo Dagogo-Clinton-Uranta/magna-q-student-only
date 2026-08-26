@@ -6,8 +6,10 @@ import type {
 
 export function GuidelineArticle({
   article,
+  backHref = "/guidelines/residency-match",
 }: {
   article: GuidelineArticleData;
+  backHref?: string;
 }) {
   const publishedDate = new Intl.DateTimeFormat("en", {
     dateStyle: "long",
@@ -98,10 +100,10 @@ export function GuidelineArticle({
       )}
 
       <Link
-        href="/guidelines/residency-match"
+        href={backHref}
         className="mt-8 inline-flex min-h-11 items-center font-bold text-brand-800"
       >
-        ← Back to the residency Match guide
+        ← Back to guidelines
       </Link>
     </article>
   );
