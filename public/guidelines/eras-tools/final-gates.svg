@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Three verification gates before applying and paying in MyERAS</title>
+  <desc id="desc">Three illustrated gates require checking the application, program-level assignments and invoice before applying, followed by post-payment monitoring.</desc>
+  <rect width="1200" height="720" fill="#f7fafc"/>
+  <text x="65" y="70" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#14213d">Stop at three gates before Apply / Pay</text>
+  <text x="65" y="106" font-family="Arial, sans-serif" font-size="18" fill="#52606d">Certification, program assignments and payment do different things. Check each separately.</text>
+
+  <g font-family="Arial, sans-serif">
+    <g transform="translate(65 155)">
+      <rect width="330" height="390" rx="20" fill="#fff" stroke="#3769a6" stroke-width="3"/>
+      <rect width="330" height="68" rx="20" fill="#e7f0ff"/>
+      <rect y="48" width="330" height="20" fill="#e7f0ff"/>
+      <circle cx="45" cy="34" r="22" fill="#14213d"/>
+      <text x="45" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#fff">1</text>
+      <text x="82" y="42" font-size="22" font-weight="700" fill="#14213d">Application gate</text>
+      <text x="28" y="112" font-size="17" font-weight="700" fill="#14213d">Before Certify &amp; Submit:</text>
+      <g font-size="16" fill="#344054">
+        <text x="32" y="158">✓ Every required section saved</text>
+        <text x="32" y="198">✓ Dates and names consistent</text>
+        <text x="32" y="238">✓ Full application PDF previewed</text>
+        <text x="32" y="278">✓ Grammar checked outside MyERAS</text>
+        <text x="32" y="318">✓ Advisor corrections re-verified</text>
+      </g>
+      <rect x="28" y="340" width="274" height="34" rx="8" fill="#fff3cd"/>
+      <text x="165" y="362" text-anchor="middle" font-size="14" font-weight="700" fill="#6b4b08">Most application content locks here</text>
+    </g>
+
+    <path d="M410 350 H440" stroke="#6b7c93" stroke-width="4" marker-end="url(#arrow)"/>
+
+    <g transform="translate(455 155)">
+      <rect width="330" height="390" rx="20" fill="#fff" stroke="#7b4bb7" stroke-width="3"/>
+      <rect width="330" height="68" rx="20" fill="#f4ebff"/>
+      <rect y="48" width="330" height="20" fill="#f4ebff"/>
+      <circle cx="45" cy="34" r="22" fill="#14213d"/>
+      <text x="45" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#fff">2</text>
+      <text x="82" y="42" font-size="22" font-weight="700" fill="#14213d">Program gate</text>
+      <text x="28" y="112" font-size="17" font-weight="700" fill="#14213d">Before selecting programs:</text>
+      <g font-size="16" fill="#344054">
+        <text x="32" y="158">✓ Correct specialty and track</text>
+        <text x="32" y="198">✓ Signal and tier confirmed</text>
+        <text x="32" y="238">✓ Correct personal statement</text>
+        <text x="32" y="278">✓ Intended letters assigned</text>
+        <text x="32" y="318">✓ Exam transcript status checked</text>
+      </g>
+      <rect x="28" y="340" width="274" height="34" rx="8" fill="#ffeceb"/>
+      <text x="165" y="362" text-anchor="middle" font-size="14" font-weight="700" fill="#8b3028">Several assignments become final</text>
+    </g>
+
+    <path d="M800 350 H830" stroke="#6b7c93" stroke-width="4" marker-end="url(#arrow)"/>
+
+    <g transform="translate(845 155)">
+      <rect width="290" height="390" rx="20" fill="#fff" stroke="#2c7a55" stroke-width="3"/>
+      <rect width="290" height="68" rx="20" fill="#e9f8ef"/>
+      <rect y="48" width="290" height="20" fill="#e9f8ef"/>
+      <circle cx="45" cy="34" r="22" fill="#14213d"/>
+      <text x="45" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#fff">3</text>
+      <text x="82" y="42" font-size="22" font-weight="700" fill="#14213d">Invoice gate</text>
+      <text x="28" y="112" font-size="17" font-weight="700" fill="#14213d">Before payment:</text>
+      <g font-size="16" fill="#344054">
+        <text x="32" y="158">✓ Program count correct</text>
+        <text x="32" y="198">✓ Specialty fee tiers checked</text>
+        <text x="32" y="238">✓ Transcript fees expected</text>
+        <text x="32" y="278">✓ Billing address accurate</text>
+        <text x="32" y="318">✓ Nonrefund rule understood</text>
+      </g>
+      <rect x="28" y="340" width="234" height="34" rx="8" fill="#d7f3e3"/>
+      <text x="145" y="362" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6b45">Save receipt after payment</text>
+    </g>
+
+    <rect x="65" y="585" width="1070" height="78" rx="14" fill="#14213d"/>
+    <text x="92" y="617" font-size="18" font-weight="700" fill="#fff">AFTER PAYMENT</text>
+    <text x="92" y="646" font-size="16" fill="#dbe7f5">Check Programs Applied To, Assignments Report, transcript reports, Message Center and email.</text>
+  </g>
+  <text x="1135" y="698" text-anchor="end" font-family="Arial, sans-serif" font-size="13" fill="#667085">Illustrative workflow — labels may differ from the live portal</text>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7c93"/>
+    </marker>
+  </defs>
+</svg>

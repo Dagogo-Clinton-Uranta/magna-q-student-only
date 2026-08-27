@@ -72,4 +72,36 @@ describe("guideline article records", () => {
       }),
     ).toThrow("existing section");
   });
+
+  it("accepts bundled guideline images from the public directory", () => {
+    expect(
+      parseGuidelineArticle({
+        ...validArticle,
+        s3_media: [
+          {
+            sectionNumber: 1,
+            type: "image",
+            s3Url: "/guidelines/eras-tools/tool-sequence.svg",
+            altText: "Illustrative ERAS tool sequence",
+          },
+        ],
+      }).s3_media,
+    ).toHaveLength(1);
+  });
+
+  it("rejects unsafe relative guideline media paths", () => {
+    expect(() =>
+      parseGuidelineArticle({
+        ...validArticle,
+        s3_media: [
+          {
+            sectionNumber: 1,
+            type: "image",
+            s3Url: "/guidelines/../private.svg",
+            altText: "Unsafe path",
+          },
+        ],
+      }),
+    ).toThrow();
+  });
 });

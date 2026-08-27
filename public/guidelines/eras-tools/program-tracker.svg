@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="710" viewBox="0 0 1200 710" role="img" aria-labelledby="title desc">
+  <title id="title">Illustrative residency program research tracker</title>
+  <desc id="desc">A table showing fictional programs and columns for eligibility, visa support, signal plan, documents, fee tier, and verification status.</desc>
+  <rect width="1200" height="710" fill="#f7fafc"/>
+  <text x="64" y="70" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#14213d">Build one program tracker before saving programs</text>
+  <text x="64" y="106" font-family="Arial, sans-serif" font-size="18" fill="#52606d">Use Residency Explorer for research, then verify requirements with each program.</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="64" y="145" width="1072" height="394" rx="14" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+    <path d="M64 215 H1136 M64 323 H1136 M64 431 H1136" stroke="#cbd5e1" stroke-width="2"/>
+    <path d="M300 145 V539 M444 145 V539 M592 145 V539 M742 145 V539 M904 145 V539 M1028 145 V539" stroke="#cbd5e1" stroke-width="2"/>
+    <rect x="64" y="145" width="1072" height="70" rx="14" fill="#14213d"/>
+    <rect x="64" y="195" width="1072" height="20" fill="#14213d"/>
+    <g font-size="15" font-weight="700" fill="#fff">
+      <text x="84" y="187">PROGRAM / TRACK</text>
+      <text x="320" y="178">HARD</text><text x="320" y="198">ELIGIBILITY</text>
+      <text x="464" y="178">VISA</text><text x="464" y="198">CONFIRMED</text>
+      <text x="612" y="178">SIGNAL</text><text x="612" y="198">PLAN</text>
+      <text x="762" y="178">DOCUMENTS</text><text x="762" y="198">PLANNED</text>
+      <text x="924" y="178">FEE</text><text x="924" y="198">TIER</text>
+      <text x="1048" y="178">FINAL</text><text x="1048" y="198">CHECK</text>
+    </g>
+
+    <g font-size="16" fill="#14213d">
+      <text x="84" y="260" font-weight="700">Harbor IM — Categorical</text>
+      <text x="84" y="286" font-size="14" fill="#667085">Fictional example</text>
+      <text x="320" y="273">Meets</text>
+      <text x="464" y="273">J-1 ✓</text>
+      <text x="612" y="273">Gold</text>
+      <text x="762" y="260">PS-IM • LoR 1–3</text><text x="762" y="284">USMLE • photo</text>
+      <text x="924" y="273">1–30</text>
+      <circle cx="1080" cy="268" r="18" fill="#d7f3e3"/><path d="M1071 268 l6 6 12-14" fill="none" stroke="#1f7a4d" stroke-width="4"/>
+
+      <text x="84" y="368" font-weight="700">Valley IM — Primary Care</text>
+      <text x="84" y="394" font-size="14" fill="#667085">Fictional example</text>
+      <text x="320" y="381">Review YOG</text>
+      <text x="464" y="381">Ask program</text>
+      <text x="612" y="381">Silver?</text>
+      <text x="762" y="368">PS-PC • LoR 1–3</text><text x="762" y="392">USMLE • photo</text>
+      <text x="924" y="381">1–30</text>
+      <circle cx="1080" cy="376" r="18" fill="#fff3cd"/><text x="1080" y="383" text-anchor="middle" font-size="20" font-weight="700" fill="#8a5a00">!</text>
+
+      <text x="84" y="476" font-weight="700">Lakeside IM — Categorical</text>
+      <text x="84" y="502" font-size="14" fill="#667085">Fictional example</text>
+      <text x="320" y="489">Meets</text>
+      <text x="464" y="489">H-1B ✓</text>
+      <text x="612" y="489">No signal</text>
+      <text x="762" y="476">PS-IM • LoR 1–4</text><text x="762" y="500">USMLE • photo</text>
+      <text x="924" y="489">31+</text>
+      <circle cx="1080" cy="484" r="18" fill="#d7f3e3"/><path d="M1071 484 l6 6 12-14" fill="none" stroke="#1f7a4d" stroke-width="4"/>
+    </g>
+
+    <rect x="64" y="575" width="336" height="76" rx="12" fill="#e7f0ff" stroke="#3769a6"/>
+    <text x="86" y="605" font-size="17" font-weight="700" fill="#14213d">1. Research</text>
+    <text x="86" y="632" font-size="15" fill="#344054">Explorer + official program page</text>
+    <rect x="432" y="575" width="336" height="76" rx="12" fill="#fff6db" stroke="#c58b19"/>
+    <text x="454" y="605" font-size="17" font-weight="700" fill="#14213d">2. Verify</text>
+    <text x="454" y="632" font-size="15" fill="#344054">Eligibility, visa, track, deadline</text>
+    <rect x="800" y="575" width="336" height="76" rx="12" fill="#e9f8ef" stroke="#2c7a55"/>
+    <text x="822" y="605" font-size="17" font-weight="700" fill="#14213d">3. Decide</text>
+    <text x="822" y="632" font-size="15" fill="#344054">Signal, documents and budget</text>
+  </g>
+  <text x="1136" y="686" text-anchor="end" font-family="Arial, sans-serif" font-size="13" fill="#667085">Illustrative tracker — all program names and data are fictional</text>
+</svg>

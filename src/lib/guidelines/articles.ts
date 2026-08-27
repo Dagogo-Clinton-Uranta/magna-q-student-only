@@ -43,7 +43,14 @@ const guidelineSectionSchema = z.object({
 const guidelineMediaSchema = z.object({
   sectionNumber: z.number().int().positive(),
   type: z.enum(["image", "video"]),
-  s3Url: z.string().url(),
+  s3Url: z.union([
+    z.string().url(),
+    z
+      .string()
+      .regex(
+        /^\/guidelines\/[a-zA-Z0-9/_-]+\.(?:avif|gif|jpe?g|png|svg|webp)$/,
+      ),
+  ]),
   altText: z.string().min(1),
   caption: z.string().min(1).optional(),
 });

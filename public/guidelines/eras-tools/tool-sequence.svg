@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Recommended sequence for using the ERAS tools and worksheets</title>
+  <desc id="desc">A six-step workflow moving from dates and offline preparation through program research, budgeting, portal entry, final verification, and monitoring.</desc>
+  <rect width="1200" height="700" fill="#f7fafc"/>
+  <rect x="48" y="42" width="1104" height="616" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="86" y="105" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#14213d">Use the tools in this order</text>
+  <text x="86" y="142" font-family="Arial, sans-serif" font-size="18" fill="#52606d">Each tool answers a different question. Do not begin with the payment screen.</text>
+
+  <g font-family="Arial, sans-serif">
+    <g transform="translate(86 195)">
+      <rect width="304" height="118" rx="16" fill="#e7f0ff" stroke="#3769a6" stroke-width="2"/>
+      <circle cx="42" cy="40" r="23" fill="#14213d"/>
+      <text x="42" y="48" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">1</text>
+      <text x="78" y="38" font-size="21" font-weight="700" fill="#14213d">Timeline + FAQ</text>
+      <text x="78" y="68" font-size="16" fill="#344054">Know dates, access rules,</text>
+      <text x="78" y="92" font-size="16" fill="#344054">browser advice and support.</text>
+    </g>
+    <path d="M405 254 H455" stroke="#6b7c93" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(470 195)">
+      <rect width="304" height="118" rx="16" fill="#fff6db" stroke="#c58b19" stroke-width="2"/>
+      <circle cx="42" cy="40" r="23" fill="#14213d"/>
+      <text x="42" y="48" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">2</text>
+      <text x="78" y="38" font-size="21" font-weight="700" fill="#14213d">Applicant Worksheet</text>
+      <text x="78" y="68" font-size="16" fill="#344054">Gather facts and draft text</text>
+      <text x="78" y="92" font-size="16" fill="#344054">away from the live portal.</text>
+    </g>
+    <path d="M789 254 H839" stroke="#6b7c93" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(854 195)">
+      <rect width="260" height="118" rx="16" fill="#e9f8ef" stroke="#2c7a55" stroke-width="2"/>
+      <circle cx="42" cy="40" r="23" fill="#14213d"/>
+      <text x="42" y="48" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">3</text>
+      <text x="78" y="38" font-size="21" font-weight="700" fill="#14213d">Explorer</text>
+      <text x="78" y="68" font-size="16" fill="#344054">Research specialties,</text>
+      <text x="78" y="92" font-size="16" fill="#344054">programs and alignment.</text>
+    </g>
+
+    <path d="M984 330 V365" stroke="#6b7c93" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(810 385)">
+      <rect width="304" height="118" rx="16" fill="#f4ebff" stroke="#7b4bb7" stroke-width="2"/>
+      <circle cx="42" cy="40" r="23" fill="#14213d"/>
+      <text x="42" y="48" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">4</text>
+      <text x="78" y="38" font-size="21" font-weight="700" fill="#14213d">Fee Calculator</text>
+      <text x="78" y="68" font-size="16" fill="#344054">Model cost per specialty</text>
+      <text x="78" y="92" font-size="16" fill="#344054">before finalizing the list.</text>
+    </g>
+    <path d="M795 444 H745" stroke="#6b7c93" stroke-width="4" marker-end="url(#arrow-left)"/>
+    <g transform="translate(426 385)">
+      <rect width="304" height="118" rx="16" fill="#ffeceb" stroke="#b84f45" stroke-width="2"/>
+      <circle cx="42" cy="40" r="23" fill="#14213d"/>
+      <text x="42" y="48" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">5</text>
+      <text x="78" y="38" font-size="21" font-weight="700" fill="#14213d">MyERAS Portal</text>
+      <text x="78" y="68" font-size="16" fill="#344054">Transfer, save and preview</text>
+      <text x="78" y="92" font-size="16" fill="#344054">one section at a time.</text>
+    </g>
+    <path d="M411 444 H361" stroke="#6b7c93" stroke-width="4" marker-end="url(#arrow-left)"/>
+    <g transform="translate(86 385)">
+      <rect width="260" height="118" rx="16" fill="#e8f7fa" stroke="#277d8b" stroke-width="2"/>
+      <circle cx="42" cy="40" r="23" fill="#14213d"/>
+      <text x="42" y="48" text-anchor="middle" font-size="22" font-weight="700" fill="#fff">6</text>
+      <text x="78" y="38" font-size="21" font-weight="700" fill="#14213d">Checklist</text>
+      <text x="78" y="68" font-size="16" fill="#344054">Verify assignments, apply,</text>
+      <text x="78" y="92" font-size="16" fill="#344054">then monitor reports.</text>
+    </g>
+  </g>
+
+  <rect x="86" y="550" width="1028" height="62" rx="12" fill="#14213d"/>
+  <text x="600" y="588" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#ffffff">Best habit: worksheet first → portal second → preview before every irreversible action</text>
+  <text x="1114" y="640" text-anchor="end" font-family="Arial, sans-serif" font-size="13" fill="#667085">Illustrative workflow — not a MyERAS screenshot</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7c93"/>
+    </marker>
+    <marker id="arrow-left" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7c93"/>
+    </marker>
+  </defs>
+</svg>

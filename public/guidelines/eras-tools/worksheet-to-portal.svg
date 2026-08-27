@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">How to move information from the ERAS Applicant Worksheet into the portal</title>
+  <desc id="desc">A fictional example shows source verification, offline drafting, portal entry, saving, and previewing without copying an exact MyERAS screen.</desc>
+  <rect width="1200" height="760" fill="#f7fafc"/>
+  <text x="70" y="72" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#14213d">Worksheet → portal: transfer one field at a time</text>
+  <text x="70" y="108" font-family="Arial, sans-serif" font-size="18" fill="#52606d">Fictional example. Verify every fact against its source before entering it.</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="70" y="145" width="430" height="505" rx="20" fill="#fff" stroke="#c58b19" stroke-width="3"/>
+    <rect x="70" y="145" width="430" height="70" rx="20" fill="#fff6db"/>
+    <rect x="70" y="195" width="430" height="20" fill="#fff6db"/>
+    <text x="105" y="188" font-size="24" font-weight="700" fill="#14213d">1. Prepare offline</text>
+    <text x="105" y="250" font-size="16" font-weight="700" fill="#344054">Position title *</text>
+    <rect x="105" y="265" width="360" height="44" rx="8" fill="#f8fafc" stroke="#94a3b8"/>
+    <text x="122" y="293" font-size="16" fill="#14213d">Clinical Research Assistant</text>
+    <text x="105" y="345" font-size="16" font-weight="700" fill="#344054">Organization *</text>
+    <rect x="105" y="360" width="360" height="44" rx="8" fill="#f8fafc" stroke="#94a3b8"/>
+    <text x="122" y="388" font-size="16" fill="#14213d">Example Community Clinic</text>
+    <text x="105" y="440" font-size="16" font-weight="700" fill="#344054">Dates *</text>
+    <rect x="105" y="455" width="170" height="44" rx="8" fill="#f8fafc" stroke="#94a3b8"/>
+    <rect x="295" y="455" width="170" height="44" rx="8" fill="#f8fafc" stroke="#94a3b8"/>
+    <text x="123" y="483" font-size="16" fill="#14213d">06 / 2024</text>
+    <text x="313" y="483" font-size="16" fill="#14213d">05 / 2025</text>
+    <text x="105" y="535" font-size="16" font-weight="700" fill="#344054">Context, roles and responsibilities</text>
+    <rect x="105" y="550" width="360" height="62" rx="8" fill="#f8fafc" stroke="#94a3b8"/>
+    <text x="122" y="577" font-size="15" fill="#14213d">Draft within the published character limit.</text>
+    <text x="122" y="600" font-size="15" fill="#52606d">Use actions, scope and outcomes.</text>
+
+    <path d="M525 395 H645" stroke="#3769a6" stroke-width="5" marker-end="url(#arrow)"/>
+    <text x="585" y="370" text-anchor="middle" font-size="16" font-weight="700" fill="#3769a6">VERIFY</text>
+    <text x="585" y="430" text-anchor="middle" font-size="14" fill="#52606d">dates • spelling</text>
+
+    <rect x="675" y="145" width="455" height="505" rx="20" fill="#fff" stroke="#3769a6" stroke-width="3"/>
+    <rect x="675" y="145" width="455" height="70" rx="20" fill="#e7f0ff"/>
+    <rect x="675" y="195" width="455" height="20" fill="#e7f0ff"/>
+    <text x="710" y="188" font-size="24" font-weight="700" fill="#14213d">2. Enter, save, preview</text>
+    <circle cx="728" cy="258" r="20" fill="#14213d"/>
+    <text x="728" y="265" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">A</text>
+    <text x="763" y="264" font-size="18" font-weight="700" fill="#14213d">Copy the verified field exactly</text>
+    <text x="763" y="290" font-size="15" fill="#52606d">Do not “improve” dates from memory.</text>
+    <circle cx="728" cy="345" r="20" fill="#14213d"/>
+    <text x="728" y="352" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">B</text>
+    <text x="763" y="351" font-size="18" font-weight="700" fill="#14213d">Watch required-field markers</text>
+    <text x="763" y="377" font-size="15" fill="#52606d">Complete conditional fields when they apply.</text>
+    <circle cx="728" cy="432" r="20" fill="#14213d"/>
+    <text x="728" y="439" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">C</text>
+    <text x="763" y="438" font-size="18" font-weight="700" fill="#14213d">Select Save before leaving</text>
+    <text x="763" y="464" font-size="15" fill="#52606d">Confirm the dashboard shows the section saved.</text>
+    <circle cx="728" cy="519" r="20" fill="#14213d"/>
+    <text x="728" y="526" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">D</text>
+    <text x="763" y="525" font-size="18" font-weight="700" fill="#14213d">Preview as a program</text>
+    <text x="763" y="551" font-size="15" fill="#52606d">Check truncation, formatting and consistency.</text>
+    <rect x="710" y="584" width="180" height="44" rx="8" fill="#14213d"/>
+    <text x="800" y="612" text-anchor="middle" font-size="16" font-weight="700" fill="#fff">SAVE SECTION</text>
+    <rect x="910" y="584" width="180" height="44" rx="8" fill="#fff" stroke="#14213d" stroke-width="2"/>
+    <text x="1000" y="612" text-anchor="middle" font-size="16" font-weight="700" fill="#14213d">PREVIEW PDF</text>
+  </g>
+
+  <rect x="70" y="680" width="1060" height="42" rx="10" fill="#fff3cd" stroke="#c58b19"/>
+  <text x="600" y="707" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#6b4b08">Never enter real applicant data into shared or public documents. Keep your working copy private.</text>
+  <text x="1130" y="744" text-anchor="end" font-family="Arial, sans-serif" font-size="13" fill="#667085">Illustrative workflow — not a MyERAS screenshot</text>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3769a6"/>
+    </marker>
+  </defs>
+</svg>
