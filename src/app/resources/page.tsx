@@ -15,13 +15,23 @@ import {
 } from "@/lib/residencies/events";
 import { createClient } from "@/lib/supabase/server";
 import { getStageDefinition } from "@/lib/stages";
+import { ResourceArticleCard } from "@/components/resources/resource-article-card";
+import {
+  getResourceSectionForStage,
+  parseResourceSummary,
+} from "@/lib/resources/articles";
 
 export default async function ResourcesPage() {
   const profile = await requireOnboardedProfile();
   const stage = getStageDefinition(profile.studyStage);
   const category = getResourceCategory(stage.resourceSlug)!;
+  const resourceSection = getResourceSectionForStage(profile.studyStage);
   const supabase = await createClient();
-  const [{ data: residencyRows }, { data: eventRows }] = await Promise.all([
+  const [
+    { data: residencyRows },
+    { data: eventRows },
+    { data: resourceRows, error: resourceError },
+  ] = await Promise.all([
     supabase
       .from("residencies")
       .select(RESIDENCY_DIRECTORY_COLUMNS)
@@ -38,7 +48,18 @@ export default async function ResourcesPage() {
       .order("event_date", { ascending: true, nullsFirst: false })
       .order("start_time", { ascending: true, nullsFirst: false })
       .range(0, 4),
+    supabase
+      .from("resources")
+      .select(
+        "id,slug,title,summary,summary_points,classification,resource_section,published_at",
+      )
+      .eq("classification", resourceSection.classification)
+      .eq("published", true)
+      .order("published_at", { ascending: false })
+      .limit(2),
   ]);
+  if (resourceError) throw new Error("Unable to load resource articles.");
+  const resourceArticles = (resourceRows ?? []).map(parseResourceSummary);
   const residencyTeaser = (residencyRows ??
     []) as unknown as ResidencyDirectoryRow[];
   const eventTeaser = (eventRows ??
@@ -119,6 +140,39 @@ export default async function ResourcesPage() {
           className="button-primary mt-6"
         >
           Browse opportunities →
+        </Link>
+      </section>
+
+      <section
+        className="mt-10 border-b border-slate-200 pb-10"
+        aria-labelledby="stage-resource-articles-title"
+      >
+        <p className="text-sm font-bold uppercase tracking-widest text-blue-700">
+          Your current stage
+        </p>
+        <h2
+          id="stage-resource-articles-title"
+          className="mt-2 border-b border-slate-300 pb-4 text-2xl font-black"
+        >
+          {resourceArticles[0]?.resource_section ?? resourceSection.title}
+        </h2>
+        <p className="mt-4 max-w-3xl leading-7 text-slate-600">
+          {resourceSection.description}
+        </p>
+        <div className="mt-5 grid gap-6 md:grid-cols-2">
+          {resourceArticles.map((article) => (
+            <ResourceArticleCard
+              key={article.id}
+              article={article}
+              href={`/resources/library/${resourceSection.slug}/${article.slug}`}
+            />
+          ))}
+        </div>
+        <Link
+          href={`/resources/library/${resourceSection.slug}`}
+          className="button-primary mt-6"
+        >
+          View more resources from this section →
         </Link>
       </section>
 

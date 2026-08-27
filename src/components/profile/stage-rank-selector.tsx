@@ -329,7 +329,13 @@ function Modal({
   );
 }
 
-function ReviewChoice({ name, legend }: { name: string; legend: string }) {
+export function ReviewChoice({
+  name,
+  legend,
+}: {
+  name: string;
+  legend: string;
+}) {
   return (
     <fieldset>
       <legend className="text-sm uppercase tracking-[0.08em]">{legend}</legend>
@@ -355,7 +361,7 @@ function ReviewChoice({ name, legend }: { name: string; legend: string }) {
   );
 }
 
-function StarRating({
+export function StarRating({
   value,
   onChange,
 }: {

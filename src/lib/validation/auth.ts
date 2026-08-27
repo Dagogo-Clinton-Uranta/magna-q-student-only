@@ -75,3 +75,8 @@ export const testimonialSchema = z.object({
   foundUseful: z.enum(["yes", "no", "unsure"]),
   wouldRecommend: z.enum(["yes", "no", "unsure"]),
 });
+
+export const feedbackPageTestimonialSchema = testimonialSchema.omit({
+  fromStage: true,
+  toStage: true,
+});

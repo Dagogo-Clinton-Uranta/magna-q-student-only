@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   authCredentialsSchema,
+  feedbackPageTestimonialSchema,
   onboardingSchema,
   studentRegistrationSchema,
   testimonialSchema,
@@ -94,5 +95,16 @@ describe("authentication validation", () => {
     expect(
       testimonialSchema.safeParse({ ...review, rating: "4.2" }).success,
     ).toBe(false);
+  });
+
+  it("accepts feedback-page testimonials without a stage transition", () => {
+    expect(
+      feedbackPageTestimonialSchema.safeParse({
+        comment: "Magna-Q has supported my preparation so far.",
+        rating: "5",
+        foundUseful: "yes",
+        wouldRecommend: "yes",
+      }).success,
+    ).toBe(true);
   });
 });

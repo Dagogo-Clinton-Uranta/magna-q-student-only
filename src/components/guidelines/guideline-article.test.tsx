@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { GuidelineArticle } from "./guideline-article";
@@ -6,6 +7,8 @@ describe("GuidelineArticle", () => {
   it("renders walkthrough-style numbered cards and spaced bullet points", () => {
     render(
       <GuidelineArticle
+        documentUrl="/assets/example-resource.pdf"
+        documentFileName="example-resource.pdf"
         article={{
           id: "d60aed0c-6403-4bbb-a1f8-7166d066fbec",
           slug: "example-guideline",
@@ -49,5 +52,11 @@ describe("GuidelineArticle", () => {
       "text-white",
     );
     expect(screen.queryByRole("img")).toBeNull();
+    const download = screen.getByRole("link", {
+      name: "Download the full PDF for Example guideline article",
+    });
+    expect(download.getAttribute("href")).toBe("/assets/example-resource.pdf");
+    expect(download.getAttribute("download")).toBe("example-resource.pdf");
+    expect(download.parentElement?.className).toContain("justify-between");
   });
 });

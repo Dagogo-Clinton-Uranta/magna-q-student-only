@@ -14,5 +14,4 @@ supabase/.temp/
 *.doc
 *.xlsx
 *.csv
-*.pdf
 *.fig
