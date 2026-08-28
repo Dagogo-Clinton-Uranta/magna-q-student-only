@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { requireRole } from "@/lib/auth/guards";
 import { guides } from "@/lib/guidelines/guides";
 import { getStageDefinition } from "@/lib/stages";
@@ -13,15 +13,8 @@ export default async function GuidelinesPage() {
   );
   return (
     <AppShell title="Timelines and Guidelines" name={profile.fullName}>
-      <section className="relative mt-6 overflow-hidden border border-brand-200 bg-soft p-6 sm:p-9">
-        <Image
-          src="/images/usmle-guidelines-hero.png"
-          alt="Medical student planning a study and residency journey"
-          fill
-          priority
-          className="object-cover object-right opacity-10"
-        />
-        <div className="relative max-w-2xl">
+      <WorkspaceHero image="journey" className="mt-6 sm:p-9">
+        <div className="max-w-2xl">
           <p className="eyebrow">Start here</p>
           <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
             A clear map from medical school to residency.
@@ -32,7 +25,7 @@ export default async function GuidelinesPage() {
             your profile.
           </p>
         </div>
-      </section>
+      </WorkspaceHero>
       <section className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5">
         <h2 className="font-bold text-amber-950">Before you choose a date</h2>
         <p className="mt-2 max-w-4xl text-sm leading-6 text-amber-900">

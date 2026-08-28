@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { ResourceArticleCard } from "@/components/resources/resource-article-card";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
@@ -47,7 +48,7 @@ export default async function ResourceLibraryPage({
       >
         ← All resources
       </Link>
-      <section className="mt-4 border border-brand-200 bg-soft p-6 sm:p-9">
+      <WorkspaceHero image="journey" className="mt-4 sm:p-9">
         <p className="eyebrow">Your current stage</p>
         <h1 className="mt-3 max-w-3xl text-3xl font-normal tracking-[0.02em] text-ink">
           {section.title}
@@ -55,7 +56,7 @@ export default async function ResourceLibraryPage({
         <p className="mt-4 max-w-3xl leading-7 text-muted">
           {section.description}
         </p>
-      </section>
+      </WorkspaceHero>
       {Object.entries(articleGroups).map(([resourceSection, resources]) => (
         <section
           key={resourceSection}

@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import { submitFeedback } from "./actions";
 import { TestimonialForm } from "@/components/feedback/testimonial-form";
@@ -13,7 +14,7 @@ export default async function FeedbackPage({
 
   return (
     <AppShell title="Feedback" name={profile.fullName}>
-      <section className="mt-6 max-w-3xl border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="journey" className="mt-6 max-w-3xl">
         <p className="eyebrow">Help shape Magna-Q</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           Tell us what would improve your preparation
@@ -77,9 +78,9 @@ export default async function FeedbackPage({
             Submit feedback
           </button>
         </form>
-      </section>
+      </WorkspaceHero>
 
-      <section className="mt-6 max-w-3xl border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="guidelines" className="mt-6 max-w-3xl">
         <p className="eyebrow">Leave a review or testimonial</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           Share your experience
@@ -89,7 +90,7 @@ export default async function FeedbackPage({
           platform useful and whether you would recommend it to a friend.
         </p>
         <TestimonialForm />
-      </section>
+      </WorkspaceHero>
     </AppShell>
   );
 }

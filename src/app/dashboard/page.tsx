@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { ResumeBlockButton } from "@/components/study/resume-block-button";
 import { BlogCard, type BlogSummary } from "@/components/blog/blog-card";
 import { requireRole } from "@/lib/auth/guards";
@@ -60,7 +61,7 @@ export default async function DashboardPage() {
   };
   return (
     <AppShell title="Student dashboard" name={profile.fullName}>
-      <section className="mt-8 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="journey" className="mt-8">
         <p className="eyebrow">Your next step</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           Your {stage.shortLabel} workspace
@@ -80,7 +81,7 @@ export default async function DashboardPage() {
             →
           </span>
         </Link>
-      </section>
+      </WorkspaceHero>
       <section className="mt-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

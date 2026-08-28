@@ -6,6 +6,7 @@ import {
   untrackResidencyEvent,
 } from "@/app/profile/opportunity-actions";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
@@ -62,12 +63,7 @@ export async function ResidencyEventDetailScreen({
   const mapQuery =
     event.format !== "virtual" && event.platform_or_location
       ? event.platform_or_location
-      : [
-          event.institution_names[0],
-          event.cities[0],
-          event.states[0],
-          "USA",
-        ]
+      : [event.institution_names[0], event.cities[0], event.states[0], "USA"]
           .filter(Boolean)
           .join(", ");
   const mapUrl = mapQuery
@@ -93,7 +89,7 @@ export async function ResidencyEventDetailScreen({
         </Link>
       </div>
 
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="guidelines" className="mt-6">
         <p className="eyebrow capitalize">
           {displayEventValue(event.event_type)}
         </p>
@@ -119,14 +115,11 @@ export async function ResidencyEventDetailScreen({
           {event.notes ??
             "Review the event schedule and official source before registering or attending."}
         </p>
-      </section>
+      </WorkspaceHero>
 
       <DetailSection eyebrow="Schedule" title="Date, time and attendance">
         <DetailGrid>
-          <DetailItem
-            label="Event date"
-            value={eventScheduleDate(event)}
-          />
+          <DetailItem label="Event date" value={eventScheduleDate(event)} />
           <DetailItem
             label="Event time"
             value={formatEventTime(

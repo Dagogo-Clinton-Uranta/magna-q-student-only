@@ -6,6 +6,7 @@ import {
   untrackResidency,
 } from "@/app/profile/actions";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
@@ -92,7 +93,7 @@ export async function ResidencyDetailScreen({
         </Link>
       </div>
 
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="guidelines" className="mt-6">
         <p className="eyebrow">{residency.specialty}</p>
         <h1 className="mt-3 max-w-4xl text-3xl font-normal tracking-[0.02em] text-ink sm:text-4xl">
           {residency.program_name ?? "Residency program"}
@@ -115,7 +116,7 @@ export async function ResidencyDetailScreen({
         <p className="mt-6 max-w-4xl text-base leading-8 text-slate-700">
           {residency.about_program}
         </p>
-      </section>
+      </WorkspaceHero>
 
       <section
         className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.8fr)]"
@@ -419,9 +420,9 @@ function TrackedResidencyTools({
         <label htmlFor="residency-notes" className="block">
           <span className="font-bold text-slate-950">Private notes</span>
           <span className="mt-2 block max-w-4xl text-sm leading-6 text-slate-600">
-            Write any notes here, such as details from your open house/networking session, any
-            notable connections you may want to reach out to, or parts of your
-            application draft for this residency.
+            Write any notes here, such as details from your open
+            house/networking session, any notable connections you may want to
+            reach out to, or parts of your application draft for this residency.
           </span>
         </label>
         <textarea

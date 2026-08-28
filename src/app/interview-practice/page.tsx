@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { requirePaidStudent } from "@/lib/auth/guards";
 
 export default async function InterviewPracticePage() {
   const { profile } = await requirePaidStudent("/interview-practice");
   return (
     <AppShell title="Interview practice" name={profile.fullName}>
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="journey" className="mt-6">
         <p className="eyebrow">Residency preparation</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           Prepare your thinking, then practice your delivery
@@ -15,7 +16,7 @@ export default async function InterviewPracticePage() {
           Build answers that are authentic, memorable and focused on what
           residency programs need from the doctors they train.
         </p>
-      </section>
+      </WorkspaceHero>
       <section className="mt-8 grid gap-6 md:grid-cols-2">
         <Link
           href="/interview-practice/tips"

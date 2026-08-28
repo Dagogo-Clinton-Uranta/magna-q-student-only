@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { ChronologicalTimeline } from "@/components/guidelines/chronological-timeline";
 import { requireRole } from "@/lib/auth/guards";
 import { getGuide, guides } from "@/lib/guidelines/guides";
@@ -38,13 +39,13 @@ export default async function GuidePage({
       >
         ← All guidelines
       </Link>
-      <section className="mt-4 border border-brand-200 bg-soft p-6 sm:p-9">
+      <WorkspaceHero image="guidelines" className="mt-4 sm:p-9">
         <p className="eyebrow">{guide.eyebrow}</p>
         <h2 className="mt-3 max-w-3xl text-3xl font-normal tracking-[0.02em] text-ink">
           {guide.title}
         </h2>
         <p className="mt-4 max-w-3xl leading-7 text-muted">{guide.summary}</p>
-      </section>
+      </WorkspaceHero>
       <section className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {guide.examAtAGlance.map((item) => (
           <div

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { ResidencyDirectoryTable } from "@/components/resources/residency-directory-table";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
@@ -48,7 +49,7 @@ export default async function TrackedResidenciesPage({
         </Link>
       </div>
 
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="journey" className="mt-6">
         <p className="eyebrow">Your private shortlist</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           Programs you are actively considering
@@ -69,7 +70,7 @@ export default async function TrackedResidenciesPage({
             Browse directory →
           </Link>
         </div>
-      </section>
+      </WorkspaceHero>
 
       {params.removed === "1" && (
         <div

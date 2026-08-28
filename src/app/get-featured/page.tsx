@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { FeatureCard } from "@/components/features/feature-card";
 import { FeatureSubmissionForm } from "@/components/features/feature-submission-form";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import type { CommunityFeature } from "@/lib/features/types";
 import { createClient } from "@/lib/supabase/server";
@@ -24,7 +25,7 @@ export default async function GetFeaturedPage() {
 
   return (
     <AppShell title="Get Featured" name={profile.fullName}>
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="guidelines" className="mt-6">
         <p className="eyebrow">Put your work in front of the community</p>
         <h2 className="mt-3 max-w-4xl text-3xl font-normal tracking-[0.02em] text-ink sm:text-4xl">
           A good idea should not disappear behind your exam schedule.
@@ -42,7 +43,7 @@ export default async function GetFeaturedPage() {
           userId={profile.id}
           username={profile.username}
         />
-      </section>
+      </WorkspaceHero>
 
       <section className="mt-12" aria-labelledby="featured-members">
         <p className="eyebrow">Community spotlights</p>

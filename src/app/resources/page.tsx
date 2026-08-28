@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { YoutubeVideoCard } from "@/components/resources/youtube-video-card";
 import { ResidencyDirectoryTable } from "@/components/resources/residency-directory-table";
 import { ResidencyEventTable } from "@/components/resources/residency-event-table";
@@ -66,7 +67,7 @@ export default async function ResourcesPage() {
     []) as unknown as ResidencyEventDirectoryRow[];
   return (
     <AppShell title="Resources" name={profile.fullName}>
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="guidelines" className="mt-6">
         <p className="eyebrow">Learning and application resources</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           Practical tools for {stage.label}
@@ -75,7 +76,7 @@ export default async function ResourcesPage() {
           Your learning videos are focused on your current stage. Residency
           programs and applicant events remain available at every stage.
         </p>
-      </section>
+      </WorkspaceHero>
 
       <section
         className="mt-10 border-b border-slate-200 pb-10"

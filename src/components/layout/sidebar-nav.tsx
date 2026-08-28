@@ -27,6 +27,7 @@ const commonStart: readonly NavigationItem[] = [
 ];
 
 const commonEnd: readonly NavigationItem[] = [
+  { label: "Interview practice", href: "/interview-practice", icon: "video" },
   { label: "Resources", href: "/resources", icon: "book" },
   { label: "Guidelines", href: "/guidelines", icon: "guide" },
   { label: "Community blogs", href: "/blogs", icon: "article" },
@@ -41,23 +42,7 @@ const warmedMenus = new Set<string>();
 export function SidebarNav({ stage }: { stage: StudentStage | null }) {
   const pathname = usePathname();
   const router = useRouter();
-  const stageItems: NavigationItem[] = [
-    ...(stage !== "residency_interviews"
-      ? [
-          {
-            label: "Practice tests",
-            href: "/create-test",
-            icon: "test" as const,
-          },
-        ]
-      : []),
-    {
-      label: "Interview practice",
-      href: "/interview-practice",
-      icon: "video",
-    },
-  ];
-  const items = [...commonStart, ...stageItems, ...commonEnd];
+  const items = getStudentNavigationItems(stage);
   const menuKey = `student:${stage ?? "unknown"}`;
 
   useEffect(() => {
@@ -138,6 +123,20 @@ export function SidebarNav({ stage }: { stage: StudentStage | null }) {
       </nav>
     </>
   );
+}
+
+export function getStudentNavigationItems(stage: StudentStage | null) {
+  const stageItems: NavigationItem[] =
+    stage !== "residency_interviews"
+      ? [
+          {
+            label: "Practice tests",
+            href: "/create-test",
+            icon: "test" as const,
+          },
+        ]
+      : [];
+  return [...commonStart, ...stageItems, ...commonEnd];
 }
 
 /** Lightweight inline icons avoid a dependency and inherit state colours. */

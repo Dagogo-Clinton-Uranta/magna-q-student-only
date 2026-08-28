@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { BlogCard, type BlogSummary } from "@/components/blog/blog-card";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
@@ -32,7 +33,7 @@ export default async function BlogsPage({
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / POSTS_PER_PAGE));
   return (
     <AppShell title="Community blogs" name={profile.fullName}>
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="guidelines" className="mt-6">
         <p className="eyebrow">Learn together</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           U.S. medical policy, research and training-system updates
@@ -42,7 +43,7 @@ export default async function BlogsPage({
           medicine—and how to discuss them thoughtfully in exams and residency
           interviews.
         </p>
-      </section>
+      </WorkspaceHero>
       <section
         className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3"
         aria-label="Blog articles"

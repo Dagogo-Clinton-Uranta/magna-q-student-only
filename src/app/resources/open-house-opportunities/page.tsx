@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { ResidencyEventTable } from "@/components/resources/residency-event-table";
 import { SearchableFilter } from "@/components/resources/searchable-filter";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
@@ -135,7 +136,7 @@ export default async function OpenHouseOpportunitiesPage({
 
   return (
     <AppShell title="Open houses and networking" name={profile.fullName}>
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="journey" className="mt-6">
         <p className="eyebrow">Meet programs before interview season</p>
         <h1 className="mt-3 max-w-4xl text-3xl font-normal tracking-[0.02em] text-ink sm:text-4xl">
           Find applicant events worth showing up for
@@ -154,7 +155,7 @@ export default async function OpenHouseOpportunitiesPage({
             Event sources checked through August 24, 2026
           </span>
         </div>
-      </section>
+      </WorkspaceHero>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <Link href="/resources" className="font-bold text-brand-700">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { StageRankSelector } from "@/components/profile/stage-rank-selector";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { getCurrentUser, requireOnboardedProfile } from "@/lib/auth/guards";
@@ -73,7 +74,7 @@ export default async function ProfilePage({
 
   return (
     <AppShell title="Profile" name={profile.fullName}>
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="guidelines" className="mt-6">
         <p className="eyebrow">Your workspace</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           Personal details and residency shortlist
@@ -82,7 +83,7 @@ export default async function ProfilePage({
           Keep your student details current and return to the programs you are
           actively considering.
         </p>
-      </section>
+      </WorkspaceHero>
 
       {params.updated === "1" && (
         <div

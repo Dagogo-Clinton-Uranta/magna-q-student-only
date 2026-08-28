@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { requirePaidStudent } from "@/lib/auth/guards";
 import { interviewCategories } from "@/lib/interview/questions";
 
@@ -7,7 +8,7 @@ export default async function PracticeSessionsPage() {
   const { profile } = await requirePaidStudent("/interview-practice/sessions");
   return (
     <AppShell title="Residency interview practice" name={profile.fullName}>
-      <section className="mt-5 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="guidelines" className="mt-5">
         <p className="eyebrow">162 guided prompts</p>
         <h2 className="mt-3 text-3xl font-normal tracking-[0.02em] text-ink">
           Choose the kind of question you want to practice
@@ -17,7 +18,7 @@ export default async function PracticeSessionsPage() {
           and receive structured feedback. Camera and microphone access begins
           only after you choose a question.
         </p>
-      </section>
+      </WorkspaceHero>
       <section
         className="mt-7 grid gap-4 lg:grid-cols-2"
         aria-label="Interview question categories"

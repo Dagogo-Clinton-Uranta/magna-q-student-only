@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { ResidencyDirectoryTable } from "@/components/resources/residency-directory-table";
 import { SearchableFilter } from "@/components/resources/searchable-filter";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
@@ -119,7 +120,7 @@ export default async function ResidencyDirectoryPage({
 
   return (
     <AppShell title="Residency directory" name={profile.fullName}>
-      <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">
+      <WorkspaceHero image="journey" className="mt-6">
         <p className="eyebrow">Explore U.S. training programs</p>
         <h1 className="mt-3 max-w-4xl text-3xl font-normal tracking-[0.02em] text-ink sm:text-4xl">
           Build a broader, better-informed residency list
@@ -138,7 +139,7 @@ export default async function ResidencyDirectoryPage({
             Dataset researched {displayedResearchDate}
           </span>
         </div>
-      </section>
+      </WorkspaceHero>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <Link href="/resources" className="font-bold text-brand-700">
