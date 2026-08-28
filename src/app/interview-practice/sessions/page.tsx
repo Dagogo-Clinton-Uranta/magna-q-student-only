@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { requireResidencyStageStudent } from "@/lib/auth/guards";
+import { requirePaidStudent } from "@/lib/auth/guards";
 import { interviewCategories } from "@/lib/interview/questions";
 
 export default async function PracticeSessionsPage() {
-  const { profile } = await requireResidencyStageStudent(
-    "/interview-practice/sessions",
-  );
+  const { profile } = await requirePaidStudent("/interview-practice/sessions");
   return (
     <AppShell title="Residency interview practice" name={profile.fullName}>
       <section className="mt-5 border border-brand-200 bg-soft p-6 sm:p-8">

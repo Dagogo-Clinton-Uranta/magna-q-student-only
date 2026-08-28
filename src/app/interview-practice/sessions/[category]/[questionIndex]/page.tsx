@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { InterviewRecorder } from "@/components/interview/interview-recorder";
-import { requireResidencyStageStudent } from "@/lib/auth/guards";
+import { requirePaidStudent } from "@/lib/auth/guards";
 import { getInterviewCategory } from "@/lib/interview/questions";
 
 export default async function InterviewRecordingPage({
@@ -12,7 +12,7 @@ export default async function InterviewRecordingPage({
 }) {
   const { category: categorySlug, questionIndex: rawIndex } = await params;
   const returnTo = `/interview-practice/sessions/${encodeURIComponent(categorySlug)}/${encodeURIComponent(rawIndex)}`;
-  const { profile } = await requireResidencyStageStudent(returnTo);
+  const { profile } = await requirePaidStudent(returnTo);
   const category = getInterviewCategory(categorySlug);
   const questionIndex = Number(rawIndex);
   const question = category?.questions[questionIndex];

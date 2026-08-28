@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { requireResidencyStageStudent } from "@/lib/auth/guards";
+import { requirePaidStudent } from "@/lib/auth/guards";
 
 export default async function InterviewPracticePage() {
-  const { profile } = await requireResidencyStageStudent("/interview-practice");
+  const { profile } = await requirePaidStudent("/interview-practice");
   return (
     <AppShell title="Interview practice" name={profile.fullName}>
       <section className="mt-6 border border-brand-200 bg-soft p-6 sm:p-8">

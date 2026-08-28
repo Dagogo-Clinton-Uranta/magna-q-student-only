@@ -41,15 +41,23 @@ const warmedMenus = new Set<string>();
 export function SidebarNav({ stage }: { stage: StudentStage | null }) {
   const pathname = usePathname();
   const router = useRouter();
-  const stageItem: NavigationItem =
-    stage === "residency_interviews"
-      ? {
-          label: "Interview practice",
-          href: "/interview-practice",
-          icon: "video",
-        }
-      : { label: "Practice tests", href: "/create-test", icon: "test" };
-  const items = [...commonStart, stageItem, ...commonEnd];
+  const stageItems: NavigationItem[] = [
+    ...(stage !== "residency_interviews"
+      ? [
+          {
+            label: "Practice tests",
+            href: "/create-test",
+            icon: "test" as const,
+          },
+        ]
+      : []),
+    {
+      label: "Interview practice",
+      href: "/interview-practice",
+      icon: "video",
+    },
+  ];
+  const items = [...commonStart, ...stageItems, ...commonEnd];
   const menuKey = `student:${stage ?? "unknown"}`;
 
   useEffect(() => {

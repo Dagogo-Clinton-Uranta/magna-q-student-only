@@ -92,12 +92,20 @@ export default async function DashboardPage() {
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {stage.examCode ? (
-            <StudyPath
-              title={stage.label}
-              description={stage.description}
-              href="/create-test"
-              index={`0${stage.rank}`}
-            />
+            <>
+              <StudyPath
+                title={stage.label}
+                description={stage.description}
+                href="/create-test"
+                index={`0${stage.rank}`}
+              />
+              <StudyPath
+                title="Interview practice"
+                description="Interview tips and guided video sessions"
+                href="/interview-practice"
+                index="04"
+              />
+            </>
           ) : (
             <>
               <StudyPath

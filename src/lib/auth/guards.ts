@@ -153,14 +153,6 @@ export async function requirePaidStudent(returnTo: string) {
   return { profile, entitlement };
 }
 
-export async function requireResidencyStageStudent(returnTo: string) {
-  const access = await requirePaidStudent(returnTo);
-  if (access.profile.studyStage !== "residency_interviews") {
-    redirect("/dashboard");
-  }
-  return access;
-}
-
 export function profileHome(role: UserRole) {
   void role;
   return "/dashboard" as const;
