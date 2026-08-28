@@ -9,7 +9,7 @@ if (
   !firstSourceOrder ||
   !expectedTotal ||
   !batchLabel
-) {
+) { 
   throw new Error(
     "Usage: node scripts/generate-residency-import.mjs <input.csv> <output.sql> <first-source-order> <expected-total> <batch-label>",
   );
