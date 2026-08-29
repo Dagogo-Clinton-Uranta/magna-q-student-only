@@ -26,7 +26,9 @@ export function recommendInterviewQuestions({
       const priorityIndex = priorityCompetencies.findIndex((id) =>
         question.competencies.includes(id),
       );
-      const tagIndex = question.competencies.findIndex((id) => priorityCompetencies.includes(id));
+      const tagIndex = question.competencies.findIndex((id) =>
+        priorityCompetencies.includes(id),
+      );
       const specialtyBoost = question.specialtyRelevance.includes(specialty)
         ? 2
         : 0;

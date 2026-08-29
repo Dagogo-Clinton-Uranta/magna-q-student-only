@@ -20,7 +20,10 @@ async function enqueue(queueName: string, stage: string, id: string) {
   const redisUrl = configuredRedisUrl();
   if (!redisUrl) return false;
   const [{ Queue }, { default: IORedis }] = await Promise.all([
-    import("bullmq"),
+    // Import only the Redis Queue class. BullMQ's package root also exports
+    // its optional Valkey Glide adapter, which makes Next/Webpack traverse a
+    // native `.node` binary that is never used by this application.
+    import("bullmq/dist/esm/classes/queue"),
     import("ioredis"),
   ]);
   const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });

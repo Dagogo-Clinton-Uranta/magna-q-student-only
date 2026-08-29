@@ -10,8 +10,8 @@ describe("interview recommendations", () => {
     const result = recommendInterviewQuestions({
       questions: interviewQuestions,
       priorityCompetencies: [
-        "patient-safety-judgment",
-        "professionalism-integrity",
+        "patient-safety-orientation",
+        "appropriate-escalation",
       ],
       specialty: "surgery",
       excludedQuestionIds: [excluded.id],
@@ -22,7 +22,9 @@ describe("interview recommendations", () => {
     expect(
       result.every((question) =>
         question.competencies.some((id) =>
-          ["patient-safety-judgment", "professionalism-integrity"].includes(id),
+          ["patient-safety-orientation", "appropriate-escalation"].includes(
+            id,
+          ),
         ),
       ),
     ).toBe(true);
