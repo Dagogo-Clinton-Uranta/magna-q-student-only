@@ -4,7 +4,14 @@ import { Worker, type Job } from "bullmq";
 import { createClient } from "@supabase/supabase-js";
 import { specialtyTermsFor, transcribeInterviewUrl } from "../src/lib/interview/deepgram";
 import { evaluateAndPersistAnswer, finalizeMockResult, markAnswerFailed, persistTranscript } from "../src/lib/interview/processing";
-import { enqueueInterviewEvaluation, enqueueMockFinalization, INTERVIEW_EVALUATION_QUEUE, INTERVIEW_TRANSCRIPTION_QUEUE, MOCK_FINALIZATION_QUEUE } from "../src/lib/interview/queue";
+import {
+  enqueueInterviewEvaluation,
+  enqueueInterviewTranscription,
+  enqueueMockFinalization,
+  INTERVIEW_EVALUATION_QUEUE,
+  INTERVIEW_TRANSCRIPTION_QUEUE,
+  MOCK_FINALIZATION_QUEUE,
+} from "../src/lib/interview/queue";
 import { getInterviewVideoUrl } from "../src/lib/interview/storage";
 
 const redisUrl = process.env.REDIS_URL;
