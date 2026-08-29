@@ -103,7 +103,9 @@ export type RubricQuestionShape = {
   questionType: "general" | "behavioral" | "situational";
 };
 
-export function rubricFamilyForQuestion(question: RubricQuestionShape) {
+export function rubricFamilyForQuestion(
+  question: RubricQuestionShape,
+): RubricFamilyDefinition {
   if (/(?:why (?:did you (?:apply to|choose)|are you interested in)|what attracted you to).*(?:our|this) program/i.test(question.text ?? "")) return rubricOverrides.programFit;
   if (/why (?:did you choose|are you pursuing|this) (?:the )?(?:specialty|field)|why do you want to be a/i.test(question.text ?? "")) return rubricOverrides.specialtyFit;
   if (/questions? (?:do you have|would you like to ask)|what (?:questions|would you like to know)/i.test(question.text ?? "")) return rubricOverrides.closingQuestions;
