@@ -1,16 +1,23 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getInterviewCategory } from "@/lib/interview/questions";
+import {
+  getInterviewCategory,
+  getInterviewQuestion,
+} from "@/lib/interview/questions";
 import { startMultipartUpload } from "@/lib/interview/storage";
 import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
 const sessionSchema = z.object({
   categorySlug: z.string().min(1).max(120),
+  questionId: z.string().min(1).max(160).optional(),
+  mockSessionId: z.string().uuid().optional(),
+  mockPosition: z.number().int().min(0).max(7).optional(),
   question: z.string().trim().min(5).max(1000),
-  mimeType: z.string().startsWith("video/").max(100),
+  mimeType: z.string().max(100).refine((value) => ["video/webm", "video/mp4", "video/quicktime"].includes(value.split(";")[0]), "Unsupported video type"),
   durationSeconds: z.number().int().min(1).max(125),
   byteSize: z
     .number()
@@ -35,6 +42,8 @@ export async function POST(request: Request) {
   const access = await getPaidStudentApiAccess("/interview-practice/sessions");
   if (!access.ok) return access.response;
   const { profile } = access;
+  if (!(await checkRateLimit("interview-mock-upload", profile.id, request, 24, 3600)))
+    return NextResponse.json({ error: "Mock upload limit reached. Please try again later." }, { status: 429 });
   const parsed = sessionSchema.safeParse(
     await request.json().catch(() => null),
   );
@@ -49,6 +58,46 @@ export async function POST(request: Request) {
       { error: "Interview question not found." },
       { status: 400 },
     );
+  const modeledQuestion = parsed.data.questionId
+    ? getInterviewQuestion(parsed.data.questionId)
+    : undefined;
+  if (parsed.data.questionId && modeledQuestion?.text !== parsed.data.question)
+    return NextResponse.json(
+      { error: "Interview question metadata does not match." },
+      { status: 400 },
+    );
+  if (
+    Boolean(parsed.data.mockSessionId) !==
+    (parsed.data.mockPosition !== undefined)
+  )
+    return NextResponse.json(
+      { error: "Incomplete mock interview context." },
+      { status: 400 },
+    );
+  if (!parsed.data.mockSessionId)
+    return NextResponse.json(
+      { error: "Individual answers use the private direct-analysis endpoint." },
+      { status: 400 },
+    );
+  if (parsed.data.mockSessionId) {
+    const mockPosition = parsed.data.mockPosition!;
+    const { data: mock } = await createServiceRoleClient()
+      .from("interview_mock_sessions")
+      .select("selected_question_ids,current_question_index,status")
+      .eq("id", parsed.data.mockSessionId)
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    if (
+      !mock ||
+      mock.status !== "in_progress" ||
+      mock.current_question_index !== mockPosition ||
+      mock.selected_question_ids[mockPosition] !== parsed.data.questionId
+    )
+      return NextResponse.json(
+        { error: "This mock interview question is not currently active." },
+        { status: 409 },
+      );
+  }
 
   const id = crypto.randomUUID();
   const extension = parsed.data.mimeType.includes("mp4") ? "mp4" : "webm";
@@ -62,6 +111,11 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
+  if (!multipart)
+    return NextResponse.json(
+      { error: "Private durable mock-video storage is not configured." },
+      { status: 503 },
+    );
 
   // Paid access and the allow-listed interview question were validated above.
   // Keep INSERT server-only so students cannot forge lifecycle, storage, or AI
@@ -78,11 +132,14 @@ export async function POST(request: Request) {
       width: parsed.data.width,
       height: parsed.data.height,
       byte_size: parsed.data.byteSize,
-      s3_bucket: multipart?.bucket ?? null,
-      s3_key: multipart ? key : null,
-      multipart_upload_id: multipart?.uploadId ?? null,
+      s3_bucket: multipart.bucket,
+      s3_key: key,
+      multipart_upload_id: multipart.uploadId,
       recording_metadata: parsed.data.metadata,
       status: "uploading",
+      question_id: parsed.data.questionId ?? null,
+      mock_session_id: parsed.data.mockSessionId ?? null,
+      mock_position: parsed.data.mockPosition ?? null,
     });
   if (error)
     return NextResponse.json(
@@ -91,7 +148,7 @@ export async function POST(request: Request) {
     );
   return NextResponse.json({
     videoId: id,
-    storageConfigured: Boolean(multipart),
+    storageConfigured: true,
     chunkSize: 5 * 1024 * 1024,
   });
 }

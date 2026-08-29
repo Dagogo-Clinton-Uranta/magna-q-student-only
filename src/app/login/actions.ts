@@ -1,6 +1,13 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { clientIpFromHeaders } from "@/lib/auth/signup-ip";
+import {
+  releaseSignupSlot,
+  reserveSignupSlot,
+} from "@/lib/auth/signup-ip-limit";
+import { logEvent } from "@/lib/logging/logger";
 import { createClient } from "@/lib/supabase/server";
 import {
   authCredentialsSchema,
@@ -22,6 +29,13 @@ function parseCredentials(formData: FormData, mode: "login" | "signup") {
       mode,
     );
   return parsed.data;
+}
+
+function signupProxyPlatform() {
+  if (process.env.VERCEL) return "vercel" as const;
+  if (process.env.CF_PAGES || process.env.CLOUDFLARE_WORKERS)
+    return "cloudflare" as const;
+  return "generic" as const;
 }
 
 export async function signInWithPassword(formData: FormData) {
@@ -78,15 +92,55 @@ export async function signUpWithPassword(formData: FormData) {
         : "That username is already taken. Please choose another.",
       "signup",
     );
-  const { data, error } = await supabase.auth.signUp({
-    email: credentials.email,
-    password: credentials.password,
-  });
-  if (error)
+
+  const clientIp = clientIpFromHeaders(await headers(), signupProxyPlatform());
+  if (!clientIp)
+    authError(
+      "We could not verify your network address. Please try again from a standard browser connection.",
+      "signup",
+    );
+  const reservation = await reserveSignupSlot(clientIp);
+  if (reservation.error) {
+    logEvent("signup_ip_limit_error", { operation: "reserve" });
+    authError(
+      "We could not verify signup eligibility. Please try again later.",
+      "signup",
+    );
+  }
+  if (!reservation.allowed)
+    authError(
+      "A maximum of two accounts can be created from the same network address.",
+      "signup",
+    );
+
+  const signupResult = await supabase.auth
+    .signUp({
+      email: credentials.email,
+      password: credentials.password,
+    })
+    .catch(async () => {
+      const release = await releaseSignupSlot(clientIp);
+      if (!release.released)
+        logEvent("signup_ip_limit_error", { operation: "release" });
+      return null;
+    });
+  const accountWasCreated = Boolean(
+    signupResult?.data.user &&
+      (signupResult.data.user.identities === undefined ||
+        signupResult.data.user.identities.length > 0),
+  );
+  if (!signupResult || signupResult.error || !accountWasCreated) {
+    if (signupResult) {
+      const release = await releaseSignupSlot(clientIp);
+      if (!release.released)
+        logEvent("signup_ip_limit_error", { operation: "release" });
+    }
     authError(
       "We could not create the account. The email may already be registered.",
       "signup",
     );
+  }
+  const { data } = signupResult;
   if (data.session && data.user) {
     const targetExam =
       credentials.studyStage === "residency_interviews"

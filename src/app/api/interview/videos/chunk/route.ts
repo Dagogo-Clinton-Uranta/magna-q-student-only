@@ -4,6 +4,7 @@ import { uploadVideoPart } from "@/lib/interview/storage";
 import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,8 @@ export async function PUT(request: Request) {
   const access = await getPaidStudentApiAccess("/interview-practice/sessions");
   if (!access.ok) return access.response;
   const { profile } = access;
+  if (!(await checkRateLimit("interview-mock-chunk", profile.id, request, 200, 3600)))
+    return NextResponse.json({ error: "Video upload limit reached. Please try again later." }, { status: 429 });
   const url = new URL(request.url);
   const parsed = z
     .object({

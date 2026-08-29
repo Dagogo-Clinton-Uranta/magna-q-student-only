@@ -1,7 +1,109 @@
+import {
+  INTERVIEW_RUBRIC_VERSION,
+  rubricFamilyForQuestion,
+} from "@/lib/interview/rubric-catalog";
+
 export type InterviewCategory = {
   slug: string;
   title: string;
   questions: string[];
+};
+
+export const interviewPracticeAreas = [
+  {
+    id: "communication-interpersonal",
+    title: "Communication & Interpersonal Skills",
+    description:
+      "Organize clear answers, listen actively, and communicate experiences with relevance and empathy.",
+  },
+  {
+    id: "professionalism-integrity",
+    title: "Professionalism & Integrity",
+    description:
+      "Explain ethical decisions, accountability, boundaries, and professional responsibilities.",
+  },
+  {
+    id: "teamwork-collaboration",
+    title: "Teamwork & Collaboration",
+    description:
+      "Show how you contribute, navigate conflict, give feedback, and work across disciplines.",
+  },
+  {
+    id: "self-awareness-reflection",
+    title: "Self-Awareness & Reflective Learning",
+    description:
+      "Discuss feedback, mistakes, growth, limitations, and deliberate improvement with insight.",
+  },
+  {
+    id: "patient-safety-judgment",
+    title: "Patient Safety & Clinical Judgment",
+    description:
+      "Communicate safe escalation, uncertainty, error response, and patient-centered judgment.",
+  },
+  {
+    id: "resilience-adaptability",
+    title: "Resilience & Adaptability",
+    description:
+      "Reflect on setbacks, changing conditions, sustainable coping, and recovery after difficulty.",
+  },
+  {
+    id: "leadership-systems",
+    title: "Leadership & Systems Thinking",
+    description:
+      "Demonstrate responsible leadership, improvement thinking, delegation, and systems awareness.",
+  },
+  {
+    id: "motivation-values-fit",
+    title: "Motivation, Values & Residency Fit",
+    description:
+      "Connect your motivations, specialty choice, goals, and values to residency training.",
+  },
+  {
+    id: "equity-cultural-humility",
+    title: "Equity, Cultural Humility & Advocacy",
+    description:
+      "Discuss bias, access, advocacy, cultural humility, and equitable patient care.",
+  },
+  {
+    id: "research-evidence",
+    title: "Research & Evidence-Based Practice",
+    description:
+      "Explain scholarship, evidence appraisal, research contributions, and intellectual curiosity.",
+  },
+] as const;
+
+export type InterviewPracticeAreaId =
+  (typeof interviewPracticeAreas)[number]["id"];
+export type InterviewQuestionType = "general" | "behavioral" | "situational";
+export type InterviewDifficulty = "foundational" | "intermediate" | "advanced";
+
+export const interviewSpecialties = [
+  { id: "general", title: "General" },
+  { id: "internal-medicine", title: "Internal Medicine" },
+  { id: "surgery", title: "Surgery" },
+  { id: "pediatrics", title: "Pediatrics" },
+  { id: "psychiatry", title: "Psychiatry" },
+  { id: "emergency-medicine", title: "Emergency Medicine" },
+  { id: "family-medicine", title: "Family Medicine" },
+  { id: "anesthesiology", title: "Anesthesiology" },
+  { id: "radiology", title: "Radiology" },
+  { id: "dermatology", title: "Dermatology" },
+] as const;
+
+export type InterviewSpecialtyId = (typeof interviewSpecialties)[number]["id"];
+
+export type InterviewQuestion = {
+  id: string;
+  text: string;
+  practiceArea: InterviewPracticeAreaId;
+  questionType: InterviewQuestionType;
+  competencies: string[];
+  specialtyRelevance: InterviewSpecialtyId[];
+  difficulty: InterviewDifficulty;
+  rubricId?: string;
+  legacyCategorySlug: string;
+  legacyCategoryTitle: string;
+  legacyQuestionIndex: number;
 };
 
 export const interviewCategories: InterviewCategory[] = [
@@ -267,4 +369,128 @@ export const interviewCategories: InterviewCategory[] = [
 
 export function getInterviewCategory(slug: string) {
   return interviewCategories.find((category) => category.slug === slug);
+}
+
+const categoryArea: Record<string, InterviewPracticeAreaId> = {
+  "personal-background": "communication-interpersonal",
+  "why-medicine": "motivation-values-fit",
+  "why-this-specialty": "motivation-values-fit",
+  "why-our-program": "motivation-values-fit",
+  "strengths-weaknesses": "self-awareness-reflection",
+  "behavioral-star": "teamwork-collaboration",
+  leadership: "leadership-systems",
+  teamwork: "teamwork-collaboration",
+  ethics: "professionalism-integrity",
+  "diversity-inclusion": "equity-cultural-humility",
+  "patient-safety": "patient-safety-judgment",
+  research: "research-evidence",
+  resilience: "resilience-adaptability",
+  "career-goals": "motivation-values-fit",
+  "healthcare-systems": "leadership-systems",
+  "closing-questions": "communication-interpersonal",
+};
+
+const specialtyQuestionMap: Record<string, InterviewSpecialtyId> = {
+  "Why Internal Medicine?": "internal-medicine",
+  "Why Surgery?": "surgery",
+  "Why Pediatrics?": "pediatrics",
+  "Why Psychiatry?": "psychiatry",
+  "Why Emergency Medicine?": "emergency-medicine",
+  "Why Family Medicine?": "family-medicine",
+  "Why Anesthesiology?": "anesthesiology",
+  "Why Radiology?": "radiology",
+  "Why Dermatology?": "dermatology",
+};
+
+function classifyArea(
+  categorySlug: string,
+  question: string,
+): InterviewPracticeAreaId {
+  if (
+    /medical error|medication error|near miss|patient safety|safe handover/i.test(
+      question,
+    )
+  )
+    return "patient-safety-judgment";
+  if (
+    /ethical|intoxicated|patient abuse|confidentiality|asked you to lie|refuses treatment/i.test(
+      question,
+    )
+  )
+    return "professionalism-integrity";
+  if (/led a team|leadership|delegate|motivate others/i.test(question))
+    return "leadership-systems";
+  if (
+    /another culture|bias|equity|inclusion|discrimination|cultural humility|advocacy|inequity/i.test(
+      question,
+    )
+  )
+    return "equity-cultural-humility";
+  return categoryArea[categorySlug] ?? "communication-interpersonal";
+}
+
+function classifyQuestionType(
+  categorySlug: string,
+  question: string,
+): InterviewQuestionType {
+  if (
+    categorySlug === "behavioral-star" ||
+    /tell me about a time|tell me about (a conflict|a failure|a mistake|an angry|a difficult|excellent teamwork|a disagreement|a near miss|perseverance)|describe (a stressful|a medical|a difficult|adapting|working|collaboration|caring)/i.test(
+      question,
+    )
+  )
+    return "behavioral";
+  if (
+    /^(what would|what if|how would|should a patient|when is it appropriate)/i.test(
+      question,
+    )
+  )
+    return "situational";
+  return "general";
+}
+
+export const interviewQuestions: InterviewQuestion[] =
+  interviewCategories.flatMap((category) =>
+    category.questions.map((text, index) => {
+      const practiceArea = classifyArea(category.slug, text);
+      const questionType = classifyQuestionType(category.slug, text);
+      const specialty = specialtyQuestionMap[text];
+      const id = `${category.slug}-${String(index + 1).padStart(2, "0")}`;
+      const rubricFamily = rubricFamilyForQuestion({
+        id,
+        text,
+        practiceArea,
+        questionType,
+      });
+      return {
+        id,
+        text,
+        practiceArea,
+        questionType,
+        competencies: rubricFamily.criteria.map((item) => item.competencyId),
+        specialtyRelevance: specialty ? [specialty] : ["general"],
+        difficulty:
+          questionType === "situational"
+            ? "advanced"
+            : questionType === "behavioral"
+              ? "intermediate"
+              : "foundational",
+        legacyCategorySlug: category.slug,
+        legacyCategoryTitle: category.title,
+        legacyQuestionIndex: index,
+        rubricId: `${rubricFamily.id}@${INTERVIEW_RUBRIC_VERSION}`,
+      } satisfies InterviewQuestion;
+    }),
+  );
+
+export function getInterviewQuestion(id: string) {
+  return interviewQuestions.find((question) => question.id === id);
+}
+
+export function getInterviewPracticeArea(id: string) {
+  return interviewPracticeAreas.find((area) => area.id === id);
+}
+
+export function questionsForPracticeArea(id: InterviewPracticeAreaId) {
+  return interviewQuestions.filter((question) => question.practiceArea === id);
 }

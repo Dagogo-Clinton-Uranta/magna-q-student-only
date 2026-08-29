@@ -19,11 +19,19 @@ const RECORDING_SECONDS = 120;
 export function InterviewRecorder({
   categorySlug,
   categoryTitle,
+  questionId,
   question,
+  mockSessionId,
+  mockPosition,
+  nextHref,
 }: {
   categorySlug: string;
   categoryTitle: string;
+  questionId?: string;
   question: string;
+  mockSessionId?: string;
+  mockPosition?: number;
+  nextHref?: string;
 }) {
   const reduceMotion = useReducedMotion();
   const [stage, setStage] = useState<Stage>("ready");
@@ -37,6 +45,7 @@ export function InterviewRecorder({
   const [duration, setDuration] = useState(1);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
+  const [simulatedFeedback, setSimulatedFeedback] = useState(false);
   const [mdModal, setMdModal] = useState(false);
   const [paymentNotice, setPaymentNotice] = useState("");
   const liveVideo = useRef<HTMLVideoElement>(null);
@@ -274,12 +283,41 @@ export function InterviewRecorder({
     setUploadProgress(2);
     const started = Date.now();
     try {
+      if (!mockSessionId) {
+        if (!questionId)
+          throw new Error("This question is missing its analysis identifier.");
+        const form = new FormData();
+        form.set("video", blob, `interview-${crypto.randomUUID()}.webm`);
+        form.set("questionId", questionId);
+        form.set("durationSeconds", String(duration));
+        form.set("width", String(recordingSettings.current.width));
+        form.set("height", String(recordingSettings.current.height));
+        setUploadProgress(20);
+        const response = await fetch("/api/interview/videos/individual", {
+          method: "POST",
+          body: form,
+        });
+        const completed = (await response.json()) as {
+          href?: string;
+          error?: string;
+        };
+        if (!response.ok || !completed.href)
+          throw new Error(
+            completed.error ?? "Analysis could not be completed.",
+          );
+        setUploadProgress(100);
+        window.location.assign(completed.href);
+        return;
+      }
       const sessionResponse = await fetch("/api/interview/videos/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           categorySlug,
+          questionId,
           question,
+          mockSessionId,
+          mockPosition,
           mimeType: blob.type || "video/webm",
           durationSeconds: duration,
           byteSize: blob.size,
@@ -323,11 +361,18 @@ export function InterviewRecorder({
       const complete = (await completeResponse.json()) as {
         feedback?: InterviewFeedback | null;
         queued?: boolean;
+        simulated?: boolean;
         error?: string;
       };
       if (!completeResponse.ok)
         throw new Error(complete.error ?? "Analysis could not be started.");
       setUploadProgress(82);
+      setSimulatedFeedback(Boolean(complete.simulated));
+      if (complete.queued && mockSessionId) {
+        setUploadProgress(100);
+        if (nextHref) window.location.assign(nextHref);
+        return;
+      }
       let result = complete.feedback ?? null;
       if (complete.queued) {
         for (let attempt = 0; attempt < 30 && !result; attempt += 1) {
@@ -375,6 +420,7 @@ export function InterviewRecorder({
     setPlaybackUrl("");
     setBlob(null);
     setFeedback(null);
+    setSimulatedFeedback(false);
     setRemaining(RECORDING_SECONDS);
     setStage("ready");
   }
@@ -417,8 +463,14 @@ export function InterviewRecorder({
                 </h3>
                 <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-300">
                   Find a quiet, well-lit place and position your camera at eye
-                  level. You will see a three-second countdown, then have up to
-                  two minutes to answer.
+                  level with front-facing light and your face clearly visible.
+                  Use a professional interview-appropriate setup and clothing,
+                  and look toward the camera naturally. You will see a
+                  three-second countdown, then have up to two minutes to answer.
+                </p>
+                <p className="mx-auto mt-3 max-w-xl text-sm text-slate-400">
+                  These are setup and coaching tips only. Camera appearance,
+                  clothing, background, and other visual traits are not scored.
                 </p>
                 <div className="mx-auto mt-5 max-w-xl rounded-lg border border-slate-700 bg-slate-900 p-4 text-left">
                   <p className="font-bold text-white">
@@ -558,8 +610,9 @@ export function InterviewRecorder({
                   Uploading and analysing your response
                 </h3>
                 <p className="mt-2 text-slate-600">
-                  We are reviewing structure, clarity, authenticity and
-                  professional delivery.
+                  We are transcribing your response and applying the versioned
+                  competency rubric. Delivery insights remain separate from
+                  competency scores.
                 </p>
                 <div className="mx-auto mt-5 h-2 max-w-lg overflow-hidden rounded-full bg-blue-100">
                   <div
@@ -580,8 +633,18 @@ export function InterviewRecorder({
                   className="rounded-xl border border-emerald-300 bg-emerald-50 p-5"
                 >
                   <h3 className="text-xl font-bold text-emerald-950">
-                    Your analysis is ready
+                    {simulatedFeedback
+                      ? "Development preview available"
+                      : "Your analysis is ready"}
                   </h3>
+                  {simulatedFeedback && (
+                    <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-semibold leading-6 text-amber-950">
+                      This sample coaching is not based on your recording and is
+                      not saved as a competency result. Authoritative scoring
+                      remains disabled until the versioned medical rubrics are
+                      supplied.
+                    </p>
+                  )}
                   <p className="mt-2 leading-7 text-emerald-900">
                     {feedback.summary}
                   </p>
@@ -598,21 +661,23 @@ export function InterviewRecorder({
                     tone="amber"
                   />
                 </div>
-                <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {Object.entries(feedback.scores).map(([label, score]) => (
-                    <div
-                      key={label}
-                      className="rounded-xl border border-slate-200 p-4 text-center"
-                    >
-                      <p className="text-2xl font-black text-blue-900">
-                        {score}%
-                      </p>
-                      <p className="mt-1 text-xs font-bold capitalize text-slate-500">
-                        {label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                {!simulatedFeedback && (
+                  <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {Object.entries(feedback.scores).map(([label, score]) => (
+                      <div
+                        key={label}
+                        className="rounded-xl border border-slate-200 p-4 text-center"
+                      >
+                        <p className="text-2xl font-black text-blue-900">
+                          {score}%
+                        </p>
+                        <p className="mt-1 text-xs font-bold capitalize text-slate-500">
+                          {label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {paymentNotice && (
                   <p
                     role="status"
@@ -623,10 +688,14 @@ export function InterviewRecorder({
                 )}
                 <div className="mt-6 flex flex-wrap justify-end gap-3">
                   <Link
-                    href="/interview-practice/sessions"
+                    href={nextHref ?? "/interview-practice/sessions"}
                     className="inline-flex min-h-12 items-center rounded-lg border border-slate-300 px-5 font-bold"
                   >
-                    Practice another question
+                    {nextHref
+                      ? mockPosition === 7
+                        ? "View mock submission"
+                        : "Continue to next question"
+                      : "Practice another question"}
                   </Link>
                   <button
                     type="button"

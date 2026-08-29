@@ -19,9 +19,18 @@ export async function GET(
     .maybeSingle();
   if (!data)
     return NextResponse.json({ error: "Video not found." }, { status: 404 });
+  const { data: processing } = await supabase
+    .from("interview_processing_answers")
+    .select("id,status,user_error_message,individual_result_id,mock_session_id,delivery_metrics")
+    .eq("video_id", id)
+    .eq("user_id", profile.id)
+    .maybeSingle();
   return NextResponse.json({
     status: data.status,
+    processingStatus: processing?.status ?? null,
     feedback: data.ai_feedback,
-    error: data.processing_error,
+    error: processing?.user_error_message ?? data.processing_error,
+    resultId: processing?.individual_result_id ?? processing?.mock_session_id ?? null,
+    deliveryMetrics: processing?.delivery_metrics ?? null,
   });
 }

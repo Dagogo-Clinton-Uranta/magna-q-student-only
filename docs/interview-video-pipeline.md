@@ -1,52 +1,59 @@
 # Interview video pipeline
 
-The interview recorder works in demo mode without external infrastructure. In demo mode, the browser still records and plays back the 360p video, the upload progress runs for at least 22 seconds, and the student receives deterministic sample feedback. The video is not retained in demo mode.
+The app is deployed with serverless-compatible assumptions: request-local files are ephemeral and never treated as durable storage. Individual practice and eight-answer mocks intentionally use different storage flows.
 
-## Production services
-
-Configure these server-only environment variables. Never prefix them with `NEXT_PUBLIC_`.
+## Required server-only configuration
 
 ```bash
-AWS_REGION=
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_S3_BUCKET=
-# Optional for an S3-compatible service:
-AWS_S3_ENDPOINT=
+DEEPGRAM_API_KEY=
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_INTERVIEW_EVALUATION_MODEL=gpt-5.6-luna
 
 REDIS_URL=
+AWS_REGION=
+INTERVIEW_VIDEO_S3_BUCKET=
+# Optional when the runtime cannot use an IAM role/workload identity:
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_ENDPOINT=
 
-OPENAI_API_KEY=
-OPENAI_TRANSCRIPTION_MODEL=gpt-transcribe
-OPENAI_MODEL=gpt-5.6-sol
-
+INTERVIEW_VIDEO_MAX_BYTES=52428800
+INTERVIEW_VIDEO_RETENTION_HOURS=24
+INTERVIEW_JOB_MAX_ATTEMPTS=5
+INTERVIEW_JOB_BACKOFF_MS=5000
+INTERVIEW_TRANSCRIPTION_CONCURRENCY=3
+INTERVIEW_EVALUATION_CONCURRENCY=2
+INTERVIEW_FINALIZATION_CONCURRENCY=1
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-The web application receives video chunks, uploads them as S3 multipart parts, completes the object, records a durable database outbox job, and enqueues the video ID in BullMQ. Start the independent worker with:
+Never prefix provider or storage secrets with `NEXT_PUBLIC_`. Prefer an IAM role or workload credentials; static AWS keys are optional.
 
-```bash
-npm run worker:interviews
-```
+## Data flows
 
-The worker container also needs `ffmpeg` and `ffprobe`. It downloads the private S3 object, extracts bounded audio and representative 360p frames, transcribes the audio, asks OpenAI for structured coaching feedback, and writes the result to Supabase. On startup it re-enqueues pending outbox jobs, so a temporary Redis or worker outage does not silently lose submitted work.
+Individual practice sends one bounded multipart request to the Node route. The video exists only in request memory, is transcribed with Deepgram Nova-3, evaluated against the persisted versioned rubric, and is then eligible for garbage collection. The video is not uploaded to S3 and cannot be replayed after processing. A failed request leaves no completed score and asks the student to resubmit the local browser recording.
 
-## Infrastructure recommendations
+Mock answers must finish a private S3 multipart upload before submission advances. The database records an answer-level durable outbox state, then BullMQ runs three ID-only queues:
 
-- Keep the S3 bucket private. Student playback URLs are short-lived and generated only after an authenticated ownership check; staff access is handled by the separate administration module.
-- Enable S3 encryption, block public access, and configure a lifecycle rule to abort incomplete multipart uploads after one day.
-- Set an explicit video-retention policy and provide a deletion process before accepting real recordings.
-- Use a managed Redis deployment with TLS, persistence, monitoring, and memory limits appropriate to the queue workload.
-- Run multiple stateless web instances and scale worker replicas independently. BullMQ job IDs prevent duplicate queue jobs for the same video.
-- Put request/body and rate limits at the ingress layer as well as the application checks.
-- Add consent, privacy, and retention language before production use because recordings contain identifiable voice and image data.
-- Connect the MD-review request to a successful server-side payment webhook before creating a paid review request. The current pay control intentionally performs no charge.
+- `interview-transcription`
+- `interview-evaluation`
+- `mock-finalization`
 
-## Data flow
+Start the independent worker with `npm run worker:interviews`. It recovers durable jobs from database statuses when it starts. Transcription is persisted before evaluation. Finalization is refused unless exactly eight answers and eight evaluations are present. Jobs are idempotent and use configured exponential retry.
 
-1. The student grants camera/microphone access and records at a maximum of 640×360 for two minutes.
-2. The browser provides local playback and lets the student delete or submit the recording.
-3. Submission creates an `interview_videos` row and sends sequential 5 MB chunks with retry handling.
-4. S3 multipart upload completes; a durable `interview_analysis_jobs` row is created before BullMQ enqueueing.
-5. The worker transcribes audio, evaluates the transcript and sampled frames, and stores feedback.
-6. Students poll for results. Manual-review requests remain in shared data for the separate administration module.
+## Evaluation boundary
+
+Deepgram supplies transcript text, word timestamps, confidence, duration, and request ID. Speaking rate, word count, filler count, and pauses are derived in application code and shown as separate Delivery Insights. They do not affect competency scores.
+
+OpenAI receives the question, rubric/version, anchors, critical elements, concerns, and transcript. Strict JSON schema output is validated again with Zod. The backend applies criterion weights and calculates aggregates. The evaluator is forbidden from scoring appearance, accent, protected traits, vague confidence/personality impressions, or predicted residency success.
+
+## Operations and privacy
+
+- Keep the interview bucket private, block public access, require encryption, and use short-lived signed URLs.
+- Configure an S3 lifecycle rule using `INTERVIEW_VIDEO_RETENTION_HOURS`; do not remove mock objects before successful processing.
+- Abort incomplete multipart uploads after one day.
+- Run Redis with TLS, persistence, monitoring, and bounded memory.
+- Run the worker separately from the web process and tune each queue's concurrency to provider limits.
+- Never log API keys, video contents, or full transcripts. Structured worker logs contain only job/session/answer IDs and provider request IDs.
+- Apply `202608290003_interview_rubrics_and_processing.sql`, then run `npm run seed:interview-rubrics` whenever the canonical mapping version changes.

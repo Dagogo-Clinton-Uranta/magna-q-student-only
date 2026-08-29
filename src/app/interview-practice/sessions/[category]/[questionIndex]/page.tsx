@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { InterviewRecorder } from "@/components/interview/interview-recorder";
 import { requirePaidStudent } from "@/lib/auth/guards";
-import { getInterviewCategory } from "@/lib/interview/questions";
+import {
+  getInterviewCategory,
+  interviewQuestions,
+} from "@/lib/interview/questions";
 
 export default async function InterviewRecordingPage({
   params,
@@ -17,6 +20,12 @@ export default async function InterviewRecordingPage({
   const questionIndex = Number(rawIndex);
   const question = category?.questions[questionIndex];
   if (!category || !Number.isInteger(questionIndex) || !question) notFound();
+  const modeledQuestion = interviewQuestions.find(
+    (item) =>
+      item.legacyCategorySlug === category.slug &&
+      item.legacyQuestionIndex === questionIndex,
+  );
+  if (!modeledQuestion) notFound();
   return (
     <AppShell title="Video interview practice" name={profile.fullName}>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -34,6 +43,7 @@ export default async function InterviewRecordingPage({
       <InterviewRecorder
         categorySlug={category.slug}
         categoryTitle={category.title}
+        questionId={modeledQuestion.id}
         question={question}
       />
     </AppShell>

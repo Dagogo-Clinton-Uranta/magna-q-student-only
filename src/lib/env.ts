@@ -13,10 +13,13 @@ const serverSchema = publicSchema.extend({
   OPENAI_MODEL: z.string().min(1).default("gpt-5.6-sol"),
   OPENAI_BASE_URL: z.string().url().default("https://api.openai.com/v1"),
   OPENAI_TRANSCRIPTION_MODEL: z.string().min(1).default("gpt-transcribe"),
+  OPENAI_INTERVIEW_EVALUATION_MODEL: z.string().min(1).default("gpt-5.6-luna"),
+  DEEPGRAM_API_KEY: z.string().min(1).optional(),
   AWS_REGION: z.string().min(1).optional(),
   AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
   AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   AWS_S3_BUCKET: z.string().min(1).optional(),
+  INTERVIEW_VIDEO_S3_BUCKET: z.string().min(1).optional(),
   AWS_S3_ENDPOINT: z.string().url().optional(),
   AWS_FEATURES_S3_BUCKET: z.string().min(1).optional(),
   AWS_FEATURES_S3_PUBLIC_URL: z.string().url().optional(),
@@ -64,12 +67,19 @@ export function getServerEnv(): ServerEnv {
     OPENAI_TRANSCRIPTION_MODEL: optionalEnvironmentValue(
       process.env.OPENAI_TRANSCRIPTION_MODEL,
     ),
+    OPENAI_INTERVIEW_EVALUATION_MODEL: optionalEnvironmentValue(
+      process.env.OPENAI_INTERVIEW_EVALUATION_MODEL,
+    ),
+    DEEPGRAM_API_KEY: optionalEnvironmentValue(process.env.DEEPGRAM_API_KEY),
     AWS_REGION: optionalEnvironmentValue(process.env.AWS_REGION),
     AWS_ACCESS_KEY_ID: optionalEnvironmentValue(process.env.AWS_ACCESS_KEY_ID),
     AWS_SECRET_ACCESS_KEY: optionalEnvironmentValue(
       process.env.AWS_SECRET_ACCESS_KEY,
     ),
     AWS_S3_BUCKET: optionalEnvironmentValue(process.env.AWS_S3_BUCKET),
+    INTERVIEW_VIDEO_S3_BUCKET: optionalEnvironmentValue(
+      process.env.INTERVIEW_VIDEO_S3_BUCKET,
+    ),
     AWS_S3_ENDPOINT: optionalEnvironmentValue(process.env.AWS_S3_ENDPOINT),
     AWS_FEATURES_S3_BUCKET: optionalEnvironmentValue(
       process.env.AWS_FEATURES_S3_BUCKET,

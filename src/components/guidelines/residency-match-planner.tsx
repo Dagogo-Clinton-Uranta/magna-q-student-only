@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import React, { useState, type KeyboardEvent } from "react";
 import {
   getResidencyTimelinePosition,
   type ResidencyMatchMilestone,

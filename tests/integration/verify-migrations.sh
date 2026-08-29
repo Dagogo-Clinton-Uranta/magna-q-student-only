@@ -41,8 +41,16 @@ create table storage.buckets (
 create table storage.objects (
   id uuid primary key default gen_random_uuid(),
   bucket_id text not null references storage.buckets(id),
-  name text not null
+  name text not null,
+  owner_id text
 );
+create function storage.foldername(name text)
+returns text[] language sql immutable as $$
+  select case
+    when strpos(name, '/') = 0 then array[]::text[]
+    else string_to_array(regexp_replace(name, '/[^/]*$', ''), '/')
+  end
+$$;
 alter table storage.objects enable row level security;
 SQL
 
@@ -131,6 +139,103 @@ begin
     raise exception 'student unexpectedly changed billing status';
   exception when insufficient_privilege then null;
   end;
+end $$;
+
+reset role;
+do $$
+begin
+  if not public.reserve_signup_ip_slot('203.0.113.200') then
+    raise exception 'first signup IP reservation was rejected';
+  end if;
+  if not public.reserve_signup_ip_slot('203.0.113.200') then
+    raise exception 'second signup IP reservation was rejected';
+  end if;
+  if public.reserve_signup_ip_slot('203.0.113.200') then
+    raise exception 'third signup IP reservation was accepted';
+  end if;
+  if not public.release_signup_ip_slot('203.0.113.200') then
+    raise exception 'failed signup did not release its reserved slot';
+  end if;
+  if not public.reserve_signup_ip_slot('203.0.113.200') then
+    raise exception 'released signup IP slot could not be reserved again';
+  end if;
+end $$;
+delete from public.signup_ip_limits;
+
+insert into public.interview_mock_sessions(
+  id, user_id, specialty, status, selected_question_ids,
+  current_question_index, started_at, completed_at
+)
+select
+  ('91000000-0000-0000-0000-' || lpad(value::text, 12, '0'))::uuid,
+  '90000000-0000-0000-0000-000000000003', 'general', 'completed',
+  array['q1','q2','q3','q4','q5','q6','q7','q8'], 8,
+  now() - make_interval(days => 10 - value),
+  now() - make_interval(days => 10 - value)
+from generate_series(1, 5) value;
+
+insert into public.interview_question_evaluations(
+  user_id, mock_session_id, question_id, question_text, question_type,
+  practice_area, competencies, mock_position
+) values (
+  '90000000-0000-0000-0000-000000000003',
+  '91000000-0000-0000-0000-000000000001',
+  'q1', 'Retention-dependent evaluation', 'general',
+  'communication-interpersonal', array['communication-interpersonal'], 0
+);
+
+insert into public.interview_mock_sessions(
+  id, user_id, specialty, status, selected_question_ids,
+  current_question_index, started_at, completed_at
+) values (
+  '91000000-0000-0000-0000-000000000006',
+  '90000000-0000-0000-0000-000000000003', 'general', 'completed',
+  array['q1','q2','q3','q4','q5','q6','q7','q8'], 8, now(), now()
+), (
+  '91000000-0000-0000-0000-000000000007',
+  '90000000-0000-0000-0000-000000000003', 'general', 'in_progress',
+  array['q1','q2','q3','q4','q5','q6','q7','q8'], 0, now(), null
+);
+
+insert into public.interview_individual_results(
+  id, user_id, question_id, question_text, practice_area, question_type,
+  specialty, status, created_at, completed_at
+)
+select
+  ('92000000-0000-0000-0000-' || lpad(value::text, 12, '0'))::uuid,
+  '90000000-0000-0000-0000-000000000003', 'q1', 'Retention result',
+  'communication-interpersonal', 'general', 'general', 'completed',
+  now() - make_interval(days => 10 - value),
+  now() - make_interval(days => 10 - value)
+from generate_series(1, 6) value;
+
+do $$
+begin
+  if (select count(*) from public.interview_competency_definitions where version = '2026.08.1') <> 40 then
+    raise exception 'interview competency seed did not create 40 definitions';
+  end if;
+  if (select count(*) from public.interview_rubric_families where version = '2026.08.1') <> 13 then
+    raise exception 'interview rubric seed did not create 13 families';
+  end if;
+  if exists (
+    select 1 from public.interview_rubric_families family,
+    lateral (select sum((criterion->>'weight')::numeric) total from jsonb_array_elements(family.criteria) criterion) weights
+    where abs(weights.total - 1) > 0.000001
+  ) then
+    raise exception 'interview rubric family weights do not total one';
+  end if;
+  if (select count(*) from public.interview_mock_sessions where user_id = '90000000-0000-0000-0000-000000000003' and status = 'completed') <> 5 then
+    raise exception 'mock result retention did not retain exactly five completed rows';
+  end if;
+  if not exists (select 1 from public.interview_mock_sessions where id = '91000000-0000-0000-0000-000000000007') then
+    raise exception 'mock result retention deleted an in-progress row';
+  end if;
+  if exists (select 1 from public.interview_question_evaluations where mock_session_id = '91000000-0000-0000-0000-000000000001') then
+    raise exception 'mock dependent evaluation was not cascade-deleted';
+  end if;
+  if (select count(*) from public.interview_individual_results where user_id = '90000000-0000-0000-0000-000000000003' and status = 'completed') <> 5 then
+    raise exception 'individual result retention did not retain exactly five completed rows independently';
+  end if;
 end $$;
 
 select case when

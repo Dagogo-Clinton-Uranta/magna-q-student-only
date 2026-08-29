@@ -1,263 +1,89 @@
-/**
- * Long-running BullMQ worker for production interview analysis.
- *
- * Infrastructure keys are intentionally not committed. Configure REDIS_URL,
- * AWS_*, SUPABASE_SERVICE_ROLE_KEY and OPENAI_API_KEY in the worker runtime.
- * The web UI uses simulated feedback until those values are available.
- */
-import { execFile } from "node:child_process";
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { promisify } from "node:util";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { Queue, Worker } from "bullmq";
+/** Long-running BullMQ workers. Run separately from the Next.js web process. */
 import IORedis from "ioredis";
-import { INTERVIEW_ANALYSIS_QUEUE } from "../src/lib/interview/queue";
-import { createInterviewS3Client } from "../src/lib/interview/storage";
-import type { InterviewFeedback } from "../src/lib/interview/feedback";
+import { Worker, type Job } from "bullmq";
+import { createClient } from "@supabase/supabase-js";
+import { specialtyTermsFor, transcribeInterviewUrl } from "../src/lib/interview/deepgram";
+import { evaluateAndPersistAnswer, finalizeMockResult, markAnswerFailed, persistTranscript } from "../src/lib/interview/processing";
+import { enqueueInterviewEvaluation, enqueueMockFinalization, INTERVIEW_EVALUATION_QUEUE, INTERVIEW_TRANSCRIPTION_QUEUE, MOCK_FINALIZATION_QUEUE } from "../src/lib/interview/queue";
+import { getInterviewVideoUrl } from "../src/lib/interview/storage";
 
-const run = promisify(execFile);
 const redisUrl = process.env.REDIS_URL;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const openaiKey = process.env.OPENAI_API_KEY;
-if (!redisUrl || !supabaseUrl || !serviceKey || !openaiKey)
-  throw new Error(
-    "Worker infrastructure environment variables are incomplete.",
-  );
-
+if (!redisUrl || !supabaseUrl || !serviceKey) throw new Error("REDIS_URL, NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.");
 const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
-const supabase = createSupabaseClient(supabaseUrl, serviceKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
+const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+void recoverDurableJobs().catch((error) => {
+  console.error("Interview job recovery failed", error);
 });
 
-const recoveryQueue = new Queue(INTERVIEW_ANALYSIS_QUEUE, { connection });
-const { data: pendingJobs } = await supabase
-  .from("interview_analysis_jobs")
-  .select("video_id")
-  .in("status", ["pending", "enqueued", "failed"])
-  .order("updated_at")
-  .limit(1_000);
-for (const pending of pendingJobs ?? []) {
-  await recoveryQueue.add(
-    "analyze-interview-video",
-    { videoId: pending.video_id },
-    {
-      jobId: pending.video_id,
-      attempts: 5,
-      backoff: { type: "exponential", delay: 5_000 },
-      removeOnComplete: 500,
-      removeOnFail: 2_000,
-    },
-  );
-  await supabase
-    .from("interview_analysis_jobs")
-    .update({ status: "enqueued" })
-    .eq("video_id", pending.video_id);
-}
-
-async function transcribe(audioPath: string) {
-  const form = new FormData();
-  form.set(
-    "file",
-    new Blob([await readFile(audioPath)], { type: "audio/mpeg" }),
-    "interview-audio.mp3",
-  );
-  form.set("model", process.env.OPENAI_TRANSCRIPTION_MODEL ?? "gpt-transcribe");
-  const response = await fetch(
-    "https://api.openai.com/v1/audio/transcriptions",
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${openaiKey}` },
-      body: form,
-    },
-  );
-  if (!response.ok)
-    throw new Error(`Transcription failed (${response.status}).`);
-  return ((await response.json()) as { text: string }).text;
-}
-
-async function analyze({
-  category,
-  question,
-  transcript,
-  framePaths,
-}: {
-  category: string;
-  question: string;
-  transcript: string;
-  framePaths: string[];
-}) {
-  const images = await Promise.all(
-    framePaths.map(async (path) => ({
-      type: "input_image" as const,
-      image_url: `data:image/jpeg;base64,${(await readFile(path)).toString("base64")}`,
-      detail: "low" as const,
-    })),
-  );
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-5.6-sol",
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: `You are evaluating a residency interview practice response.
-Category: ${category}
-Question: ${question}
-Transcript: ${transcript}
-
-Use the sampled frames only for presentation-level observations such as visible engagement and posture. Do not infer protected traits, health status, personality, or emotion. Evaluate answer structure, clarity, authenticity, professionalism, relevance, and use of evidence. Return only JSON matching:
-{"summary":"string","strengths":["string"],"improvements":["string"],"scores":{"structure":0,"clarity":0,"authenticity":0,"professionalism":0}}`,
-            },
-            ...images,
-          ],
-        },
-      ],
-    }),
-  });
-  if (!response.ok)
-    throw new Error(`OpenAI analysis failed (${response.status}).`);
-  const payload = (await response.json()) as {
-    output?: Array<{ content?: Array<{ text?: string }> }>;
-  };
-  const text =
-    payload.output
-      ?.flatMap((item) => item.content ?? [])
-      .map((item) => item.text ?? "")
-      .join("") ?? "";
-  return JSON.parse(
-    text.replace(/^```json\s*|\s*```$/g, ""),
-  ) as InterviewFeedback;
-}
-
-const worker = new Worker<{ videoId: string }>(
-  INTERVIEW_ANALYSIS_QUEUE,
-  async (job) => {
-    const { data: video, error } = await supabase
-      .from("interview_videos")
-      .select("*")
-      .eq("id", job.data.videoId)
-      .single();
-    if (error || !video?.s3_key)
-      throw error ?? new Error("Video record not found.");
-    await supabase
-      .from("interview_analysis_jobs")
-      .update({ status: "processing", attempts: job.attemptsMade + 1 })
-      .eq("video_id", video.id);
-    await supabase
-      .from("interview_videos")
-      .update({ status: "analyzing", processing_error: null })
-      .eq("id", video.id);
-    const storage = createInterviewS3Client();
-    if (!storage) throw new Error("S3 is not configured in the worker.");
-    const directory = await mkdtemp(join(tmpdir(), `medinexus-${video.id}-`));
-    try {
-      const object = await storage.client.send(
-        new GetObjectCommand({
-          Bucket: storage.config.bucket,
-          Key: video.s3_key,
-        }),
-      );
-      if (!object.Body) throw new Error("S3 object body was empty.");
-      const videoPath = join(directory, "answer.webm");
-      const audioPath = join(directory, "answer.mp3");
-      await writeFile(
-        videoPath,
-        Buffer.from(await object.Body.transformToByteArray()),
-      );
-      // FFmpeg must be installed in the worker image. Five low-resolution
-      // frames are sampled to constrain latency and vision token usage.
-      await run("ffmpeg", [
-        "-y",
-        "-i",
-        videoPath,
-        "-vn",
-        "-ac",
-        "1",
-        "-ar",
-        "16000",
-        "-b:a",
-        "64k",
-        audioPath,
-      ]);
-      await run("ffmpeg", [
-        "-y",
-        "-i",
-        videoPath,
-        "-vf",
-        "fps=1/24,scale=640:360",
-        "-frames:v",
-        "5",
-        join(directory, "frame-%02d.jpg"),
-      ]);
-      const framePaths = (await readdir(directory))
-        .filter((name) => name.startsWith("frame-"))
-        .sort()
-        .map((name) => join(directory, name));
-      const transcript = await transcribe(audioPath);
-      const feedback = await analyze({
-        category: video.category,
-        question: video.question_answered,
-        transcript,
-        framePaths,
-      });
-      await supabase
-        .from("interview_videos")
-        .update({
-          status: "completed",
-          ai_feedback: feedback,
-          completed_at: new Date().toISOString(),
-          processing_error: null,
-        })
-        .eq("id", video.id);
-      await supabase
-        .from("interview_analysis_jobs")
-        .update({ status: "completed", last_error: null })
-        .eq("video_id", video.id);
-      return { completed: true };
-    } catch (processingError) {
-      await supabase
-        .from("interview_videos")
-        .update({
-          status: "failed",
-          processing_error:
-            processingError instanceof Error
-              ? processingError.message.slice(0, 1000)
-              : "Unknown processing failure",
-        })
-        .eq("id", video.id);
-      await supabase
-        .from("interview_analysis_jobs")
-        .update({
-          status: "failed",
-          last_error:
-            processingError instanceof Error
-              ? processingError.message.slice(0, 1_000)
-              : "Unknown processing failure",
-        })
-        .eq("video_id", video.id);
-      throw processingError;
-    } finally {
-      await rm(directory, { recursive: true, force: true });
+new Worker(INTERVIEW_TRANSCRIPTION_QUEUE, async (job: Job<{ id: string }>) => {
+  const answerId = job.data.id;
+  try {
+    const { data: answer } = await db.from("interview_processing_answers").select("*").eq("id", answerId).single();
+    if (!answer) throw new Error("ANSWER_NOT_FOUND");
+    if (["EVALUATED", "COMPLETED"].includes(answer.status)) return;
+    if (["TRANSCRIBED", "EVALUATING"].includes(answer.status)) {
+      await enqueueInterviewEvaluation(answerId);
+      return;
     }
-  },
-  {
-    connection,
-    concurrency: Number(process.env.INTERVIEW_WORKER_CONCURRENCY ?? 3),
-  },
-);
+    const key = answer.storage_reference;
+    if (answer.storage_kind !== "s3" || !key) throw new Error("DURABLE_VIDEO_REQUIRED");
+    await db.from("interview_processing_answers").update({ status: "TRANSCRIBING", attempt_count: job.attemptsMade + 1 }).eq("id", answerId);
+    const url = await getInterviewVideoUrl(key);
+    if (!url) throw new Error("VIDEO_URL_UNAVAILABLE");
+    const { data: mock } = answer.mock_session_id
+      ? await db.from("interview_mock_sessions").select("specialty").eq("id", answer.mock_session_id).single()
+      : { data: null };
+    await persistTranscript(db, answerId, await transcribeInterviewUrl(url, specialtyTermsFor(mock?.specialty)));
+    await enqueueInterviewEvaluation(answerId);
+    console.info(JSON.stringify({ event: "interview_transcribed", jobId: job.id, answerId }));
+  } catch (error) {
+    if (job.attemptsMade + 1 >= Number(job.opts.attempts ?? 1)) await markAnswerFailed(db, answerId, error);
+    throw error;
+  }
+}, { connection, concurrency: envInt("INTERVIEW_TRANSCRIPTION_CONCURRENCY", 3) });
 
-worker.on("failed", (job, error) => {
-  console.error("Interview analysis failed", job?.id, error.message);
-});
-console.log("Interview analysis worker is ready.");
+new Worker(INTERVIEW_EVALUATION_QUEUE, async (job: Job<{ id: string }>) => {
+  try {
+    const answer = await evaluateAndPersistAnswer(db, job.data.id) as { mock_session_id?: string };
+    if (answer.mock_session_id) {
+      const { count } = await db.from("interview_processing_answers").select("id", { count: "exact", head: true }).eq("mock_session_id", answer.mock_session_id).eq("status", "EVALUATED");
+      if (count === 8) await enqueueMockFinalization(answer.mock_session_id);
+    }
+    console.info(JSON.stringify({ event: "interview_evaluated", jobId: job.id, answerId: job.data.id }));
+  } catch (error) {
+    if (job.attemptsMade + 1 >= Number(job.opts.attempts ?? 1)) await markAnswerFailed(db, job.data.id, error);
+    throw error;
+  }
+}, { connection, concurrency: envInt("INTERVIEW_EVALUATION_CONCURRENCY", 2) });
+
+new Worker(MOCK_FINALIZATION_QUEUE, async (job: Job<{ id: string }>) => {
+  try {
+    await finalizeMockResult(db, job.data.id);
+    console.info(JSON.stringify({ event: "mock_finalized", jobId: job.id, sessionId: job.data.id }));
+  } catch (error) {
+    await db.from("interview_processing_answers").update({ status: "EVALUATED" }).eq("mock_session_id", job.data.id).eq("status", "FINALIZING");
+    throw error;
+  }
+}, { connection, concurrency: envInt("INTERVIEW_FINALIZATION_CONCURRENCY", 1) });
+
+function envInt(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
+async function recoverDurableJobs() {
+  const { data: transcription } = await db.from("interview_processing_answers").select("id").eq("storage_kind", "s3").in("status", ["UPLOADED", "QUEUED", "TRANSCRIBING"]);
+  for (const answer of transcription ?? []) await enqueueInterviewTranscription(answer.id);
+  const { data: evaluation } = await db.from("interview_processing_answers").select("id").in("status", ["TRANSCRIBED", "EVALUATING"]);
+  for (const answer of evaluation ?? []) await enqueueInterviewEvaluation(answer.id);
+  const { data: mocks } = await db.from("interview_mock_sessions").select("id").eq("status", "awaiting_evaluation");
+  for (const mock of mocks ?? []) {
+    const { count } = await db.from("interview_processing_answers").select("id", { count: "exact", head: true }).eq("mock_session_id", mock.id).eq("status", "EVALUATED");
+    if (count === 8) await enqueueMockFinalization(mock.id);
+  }
+}
+
+console.info("Interview transcription, evaluation, and mock-finalization workers are ready.");
