@@ -5,7 +5,7 @@ import { evaluateInterviewTranscript, type InterviewEvaluation } from "./openai-
 import { aggregateCompetencyScores, overallPracticeAssessment, practiceAssessmentLabel, strongestAndWeakestCompetencies, weightedQuestionScore } from "./scoring";
 import { recommendInterviewQuestions } from "./recommendations";
 import type { InterviewTranscript } from "./deepgram";
-import type { QuestionEvaluationInput } from "./types";
+import type { InterviewScore, QuestionEvaluationInput } from "./types";
 import { mockReadyForFinalization } from "./finalization";
 
 type Db = SupabaseClient;
@@ -100,9 +100,9 @@ function normalizeEvaluation(evaluation: InterviewEvaluation, criteria: Array<{ 
   const safetyCriticalCompetencies = new Set(["patient-safety-orientation", "appropriate-escalation", "recognition-limits", "ethical-reasoning", "professionalism", "accountability"]);
   return { questionId: "", rubricId: "", rubricVersion: INTERVIEW_RUBRIC_VERSION, strengths: evaluation.strengths, improvements: evaluation.improvements, competencyScores: criteria.map((criterion) => {
     const scored = evaluation.criteria.find((item) => item.competencyId === criterion.competencyId)!;
-    const score = applyCriticalCap && evaluation.criticalElementsMissing.length && safetyCriticalCompetencies.has(criterion.competencyId)
-      ? Math.min(scored.score, 2) as 1 | 2 | 3 | 4 | 5
-      : scored.score;
+    const score: InterviewScore = applyCriticalCap && evaluation.criticalElementsMissing.length && safetyCriticalCompetencies.has(criterion.competencyId)
+      ? (Math.min(scored.score, 2) as InterviewScore)
+      : (scored.score as InterviewScore);
     return { competencyId: criterion.competencyId, weight: criterion.weight, score, evidence: scored.evidence, feedback: scored.missingForNextLevel };
   }) };
 }

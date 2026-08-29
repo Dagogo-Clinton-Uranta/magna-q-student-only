@@ -30,7 +30,8 @@ export async function POST(request: Request) {
   const parsed = metadataSchema.safeParse(form ? Object.fromEntries(form.entries()) : null);
   const video = form?.get("video");
   const allowedTypes = new Set(["video/webm", "video/mp4", "video/quicktime"]);
-  if (!parsed.success || !(video instanceof File) || !allowedTypes.has(video.type.split(";")[0]) || video.size < 1 || video.size > maxBytes)
+  const mediaType = video instanceof File ? (video.type.split(";", 1)[0] ?? "") : "";
+  if (!parsed.success || !(video instanceof File) || !allowedTypes.has(mediaType) || video.size < 1 || video.size > maxBytes)
     return NextResponse.json({ error: "Provide a valid interview video within the configured upload limit." }, { status: 400 });
   const question = getInterviewQuestion(parsed.data.questionId);
   if (!question) return NextResponse.json({ error: "Interview question not found." }, { status: 400 });

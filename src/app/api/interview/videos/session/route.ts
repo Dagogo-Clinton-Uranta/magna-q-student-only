@@ -17,7 +17,13 @@ const sessionSchema = z.object({
   mockSessionId: z.string().uuid().optional(),
   mockPosition: z.number().int().min(0).max(7).optional(),
   question: z.string().trim().min(5).max(1000),
-  mimeType: z.string().max(100).refine((value) => ["video/webm", "video/mp4", "video/quicktime"].includes(value.split(";")[0]), "Unsupported video type"),
+  mimeType: z.string().max(100).refine(
+    (value) =>
+      ["video/webm", "video/mp4", "video/quicktime"].includes(
+        value.split(";", 1)[0] ?? "",
+      ),
+    "Unsupported video type",
+  ),
   durationSeconds: z.number().int().min(1).max(125),
   byteSize: z
     .number()

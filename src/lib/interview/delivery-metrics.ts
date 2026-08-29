@@ -13,11 +13,12 @@ export function calculateDeliveryMetrics(
 ) {
   const durationSeconds = Math.max(
     0,
-    providerDuration ?? (words.length ? words[words.length - 1].end : 0),
+    providerDuration ?? words.at(-1)?.end ?? 0,
   );
-  const pauses = words.slice(1).map((word, index) =>
-    Math.max(0, word.start - words[index].end),
-  );
+  const pauses = words.slice(1).map((word, index) => {
+    const previous = words[index];
+    return previous ? Math.max(0, word.start - previous.end) : 0;
+  });
   return {
     durationSeconds: round(durationSeconds),
     wordCount: words.length,
