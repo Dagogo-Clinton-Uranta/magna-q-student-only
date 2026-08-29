@@ -1,6 +1,6 @@
 /** Long-running BullMQ workers. Run separately from the Next.js web process. */
 import IORedis from "ioredis";
-import { Worker, type Job } from "bullmq";
+import type { Job } from "bullmq";
 import { createClient } from "@supabase/supabase-js";
 import { specialtyTermsFor, transcribeInterviewUrl } from "../src/lib/interview/deepgram";
 import { evaluateAndPersistAnswer, finalizeMockResult, markAnswerFailed, persistTranscript } from "../src/lib/interview/processing";
@@ -13,6 +13,12 @@ import {
   MOCK_FINALIZATION_QUEUE,
 } from "../src/lib/interview/queue";
 import { getInterviewVideoUrl } from "../src/lib/interview/storage";
+
+// Use BullMQ's CommonJS Redis worker directly. The package root eagerly
+// exports optional Valkey/Postgres adapters that this worker does not use.
+const { Worker } = require("bullmq/dist/cjs/classes/worker") as {
+  Worker: typeof import("bullmq")["Worker"];
+};
 
 const redisUrl = process.env.REDIS_URL;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

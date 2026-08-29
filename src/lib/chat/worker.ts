@@ -33,7 +33,9 @@ export async function startChatModerationWorker() {
   const redisUrl = configuredRedisUrl();
   if (!redisUrl || !process.env.MONGODB_URI) return null;
   const [{ Worker }, { default: IORedis }] = await Promise.all([
-    import("bullmq"),
+    // Import the Redis worker directly so Webpack does not traverse BullMQ's
+    // unused native Valkey Glide export through the chat socket route.
+    import("bullmq/dist/esm/classes/worker"),
     import("ioredis"),
   ]);
   const connection = new IORedis(redisUrl, {

@@ -4,7 +4,9 @@ export type ChatModerationJob = { messageId: string };
 export async function enqueueChatModeration(data: ChatModerationJob) {
   const redisUrl = requireRedisUrl("chat AI moderation");
   const [{ Queue }, { default: IORedis }] = await Promise.all([
-    import("bullmq"),
+    // Avoid BullMQ's package root: it also exports the optional native Valkey
+    // Glide adapter, which cannot be bundled into a Vercel Node function.
+    import("bullmq/dist/esm/classes/queue"),
     import("ioredis"),
   ]);
   const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
