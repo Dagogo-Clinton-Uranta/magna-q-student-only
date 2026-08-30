@@ -1,6 +1,6 @@
 # Interview video pipeline
 
-The app is deployed with serverless-compatible assumptions: request-local files are ephemeral and never treated as durable storage. Individual practice and eight-answer mocks intentionally use different storage flows.
+The app uses private Cloudflare R2 object storage for every individual and mock-interview recording. Browser uploads go directly to R2 with short-lived, content-type-bound presigned PUT URLs, so video bytes never pass through the Vercel Function request-body limit.
 
 ## Required server-only configuration
 
@@ -11,12 +11,12 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_INTERVIEW_EVALUATION_MODEL=gpt-5.6-luna
 
 REDIS_URL=
-AWS_REGION=
-INTERVIEW_VIDEO_S3_BUCKET=
-# Optional when the runtime cannot use an IAM role/workload identity:
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_S3_ENDPOINT=
+CLOUDFLARE_R2_ACCOUNT_ID=
+CLOUDFLARE_R2_ACCESS_KEY_ID=
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=
+CLOUDFLARE_R2_BUCKET=magna-q-interview-videos
+# Optional; normally derived as https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+CLOUDFLARE_R2_ENDPOINT=
 
 INTERVIEW_VIDEO_MAX_BYTES=52428800
 INTERVIEW_VIDEO_RETENTION_HOURS=24
@@ -28,13 +28,41 @@ INTERVIEW_FINALIZATION_CONCURRENCY=1
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-Never prefix provider or storage secrets with `NEXT_PUBLIC_`. Prefer an IAM role or workload credentials; static AWS keys are optional.
+Never prefix provider or storage secrets with `NEXT_PUBLIC_`. Add the same R2 variables to both the Vercel project and the separately deployed interview worker. Only short-lived presigned URLs are sent to browsers; R2 credentials remain server-only.
+
+## Cloudflare R2 setup
+
+1. In Cloudflare Dashboard, open **R2 Object Storage** and create a private bucket. `magna-q-interview-videos` is the documented default, but any bucket name works if `CLOUDFLARE_R2_BUCKET` matches it.
+2. Copy the **Account ID** from the R2 overview into `CLOUDFLARE_R2_ACCOUNT_ID`.
+3. Select **Manage R2 API Tokens**, create an account API token scoped to this bucket with **Object Read & Write**, then copy its **Access Key ID** and **Secret Access Key** into the corresponding variables. The secret is shown once; store it in the deployment secret manager.
+4. Keep public access disabled. Playback and transcription use five-minute signed GET URLs.
+5. In the bucket's **Settings → CORS Policy**, allow each real application origin. Replace the sample domains before saving:
+
+```json
+[
+  {
+    "AllowedOrigins": [
+      "https://your-production-domain.example",
+      "https://your-project.vercel.app",
+      "http://localhost:3000"
+    ],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["Content-Type"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+6. Add a lifecycle rule for the `interview-videos/` prefix using the privacy/retention period you choose. Do not make the bucket public. Database scorecards are independent of object retention.
+7. Add the four required R2 variables to Vercel Production and Preview as appropriate, redeploy, and restart the interview worker with the same values.
+8. Apply `202608300001_cloudflare_r2_interview_storage.sql` before enabling uploads.
 
 ## Data flows
 
-Individual practice sends one bounded multipart request to the Node route. The video exists only in request memory, is transcribed with Deepgram Nova-3, evaluated against the persisted versioned rubric, and is then eligible for garbage collection. The video is not uploaded to S3 and cannot be replayed after processing. A failed request leaves no completed score and asks the student to resubmit the local browser recording.
+For both practice modes, the authenticated session route validates question and recording metadata, reserves a user-owned R2 object key, and returns a 15-minute presigned PUT URL. The browser uploads directly to R2. The completion route verifies the stored object's exact size and media type with `HeadObject` before it creates durable processing state.
 
-Mock answers must finish a private S3 multipart upload before submission advances. The database records an answer-level durable outbox state, then BullMQ runs three ID-only queues:
+The database records an answer-level durable outbox state, then BullMQ runs three ID-only queues:
 
 - `interview-transcription`
 - `interview-evaluation`
@@ -50,10 +78,10 @@ OpenAI receives the question, rubric/version, anchors, critical elements, concer
 
 ## Operations and privacy
 
-- Keep the interview bucket private, block public access, require encryption, and use short-lived signed URLs.
-- Configure an S3 lifecycle rule using `INTERVIEW_VIDEO_RETENTION_HOURS`; do not remove mock objects before successful processing.
-- Abort incomplete multipart uploads after one day.
+- Keep the R2 bucket private and use only short-lived signed URLs.
+- Configure an R2 lifecycle rule using your chosen `INTERVIEW_VIDEO_RETENTION_HOURS`; allow enough time for retries and user playback.
+- Restrict the R2 token to Object Read & Write on the interview bucket only.
 - Run Redis with TLS, persistence, monitoring, and bounded memory.
 - Run the worker separately from the web process and tune each queue's concurrency to provider limits.
 - Never log API keys, video contents, or full transcripts. Structured worker logs contain only job/session/answer IDs and provider request IDs.
-- Apply `202608290003_interview_rubrics_and_processing.sql`, then run `npm run seed:interview-rubrics` whenever the canonical mapping version changes.
+- Apply migrations through `202608300001_cloudflare_r2_interview_storage.sql`, then run `npm run seed:interview-rubrics` whenever the canonical mapping version changes.

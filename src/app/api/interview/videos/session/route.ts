@@ -4,7 +4,7 @@ import {
   getInterviewCategory,
   getInterviewQuestion,
 } from "@/lib/interview/questions";
-import { startMultipartUpload } from "@/lib/interview/storage";
+import { createInterviewUploadUrl } from "@/lib/interview/storage";
 import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -17,13 +17,16 @@ const sessionSchema = z.object({
   mockSessionId: z.string().uuid().optional(),
   mockPosition: z.number().int().min(0).max(7).optional(),
   question: z.string().trim().min(5).max(1000),
-  mimeType: z.string().max(100).refine(
-    (value) =>
-      ["video/webm", "video/mp4", "video/quicktime"].includes(
-        value.split(";", 1)[0] ?? "",
-      ),
-    "Unsupported video type",
-  ),
+  mimeType: z
+    .string()
+    .max(100)
+    .refine(
+      (value) =>
+        ["video/webm", "video/mp4", "video/quicktime"].includes(
+          value.split(";", 1)[0] ?? "",
+        ),
+      "Unsupported video type",
+    ),
   durationSeconds: z.number().int().min(1).max(125),
   byteSize: z
     .number()
@@ -48,8 +51,13 @@ export async function POST(request: Request) {
   const access = await getPaidStudentApiAccess("/interview-practice/sessions");
   if (!access.ok) return access.response;
   const { profile } = access;
-  if (!(await checkRateLimit("interview-mock-upload", profile.id, request, 24, 3600)))
-    return NextResponse.json({ error: "Mock upload limit reached. Please try again later." }, { status: 429 });
+  if (
+    !(await checkRateLimit("interview-upload", profile.id, request, 30, 3600))
+  )
+    return NextResponse.json(
+      { error: "Interview upload limit reached. Please try again later." },
+      { status: 429 },
+    );
   const parsed = sessionSchema.safeParse(
     await request.json().catch(() => null),
   );
@@ -72,17 +80,17 @@ export async function POST(request: Request) {
       { error: "Interview question metadata does not match." },
       { status: 400 },
     );
+  if (!parsed.data.mockSessionId && !modeledQuestion)
+    return NextResponse.json(
+      { error: "Individual interview question metadata is required." },
+      { status: 400 },
+    );
   if (
     Boolean(parsed.data.mockSessionId) !==
     (parsed.data.mockPosition !== undefined)
   )
     return NextResponse.json(
       { error: "Incomplete mock interview context." },
-      { status: 400 },
-    );
-  if (!parsed.data.mockSessionId)
-    return NextResponse.json(
-      { error: "Individual answers use the private direct-analysis endpoint." },
       { status: 400 },
     );
   if (parsed.data.mockSessionId) {
@@ -108,53 +116,61 @@ export async function POST(request: Request) {
   const id = crypto.randomUUID();
   const extension = parsed.data.mimeType.includes("mp4") ? "mp4" : "webm";
   const key = `interview-videos/${profile.id}/${id}.${extension}`;
-  let multipart: Awaited<ReturnType<typeof startMultipartUpload>> = null;
+  let upload: Awaited<ReturnType<typeof createInterviewUploadUrl>> = null;
   try {
-    multipart = await startMultipartUpload(key, parsed.data.mimeType);
+    upload = await createInterviewUploadUrl(key, parsed.data.mimeType);
   } catch {
     return NextResponse.json(
-      { error: "Could not start the durable upload." },
+      { error: "Could not start the secure Cloudflare upload." },
       { status: 503 },
     );
   }
-  if (!multipart)
+  if (!upload)
     return NextResponse.json(
-      { error: "Private durable mock-video storage is not configured." },
+      { error: "Private Cloudflare video storage is not configured." },
       { status: 503 },
     );
 
+  const db = createServiceRoleClient();
   // Paid access and the allow-listed interview question were validated above.
   // Keep INSERT server-only so students cannot forge lifecycle, storage, or AI
   // fields through the Data API; every protected value is fixed by this route.
-  const { error } = await createServiceRoleClient()
-    .from("interview_videos")
-    .insert({
-      id,
-      user_id: profile.id,
-      category: category.title,
-      question_answered: parsed.data.question,
-      mime_type: parsed.data.mimeType,
-      duration_seconds: parsed.data.durationSeconds,
-      width: parsed.data.width,
-      height: parsed.data.height,
-      byte_size: parsed.data.byteSize,
-      s3_bucket: multipart.bucket,
-      s3_key: key,
-      multipart_upload_id: multipart.uploadId,
-      recording_metadata: parsed.data.metadata,
-      status: "uploading",
-      question_id: parsed.data.questionId ?? null,
-      mock_session_id: parsed.data.mockSessionId ?? null,
-      mock_position: parsed.data.mockPosition ?? null,
-    });
-  if (error)
+  const { error } = await db.from("interview_videos").insert({
+    id,
+    user_id: profile.id,
+    category: category.title,
+    question_answered: parsed.data.question,
+    mime_type: parsed.data.mimeType,
+    duration_seconds: parsed.data.durationSeconds,
+    width: parsed.data.width,
+    height: parsed.data.height,
+    byte_size: parsed.data.byteSize,
+    s3_bucket: upload.bucket,
+    s3_key: key,
+    multipart_upload_id: null,
+    recording_metadata: {
+      ...parsed.data.metadata,
+      storage: "cloudflare-r2",
+    },
+    status: "uploading",
+    question_id: parsed.data.questionId ?? null,
+    mock_session_id: parsed.data.mockSessionId ?? null,
+    mock_position: parsed.data.mockPosition ?? null,
+    individual_result_id: null,
+  });
+  if (error) {
     return NextResponse.json(
       { error: "Could not save the upload session." },
       { status: 500 },
     );
+  }
   return NextResponse.json({
     videoId: id,
+    resultId: parsed.data.mockSessionId ?? null,
+    resultHref: parsed.data.mockSessionId
+      ? `/interview-practice/results/mock/${parsed.data.mockSessionId}`
+      : null,
     storageConfigured: true,
-    chunkSize: 5 * 1024 * 1024,
+    uploadUrl: upload.uploadUrl,
   });
 }

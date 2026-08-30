@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getInterviewQuestion } from "@/lib/interview/questions";
 import { enqueueInterviewTranscription } from "@/lib/interview/queue";
-import { completeVideoUpload } from "@/lib/interview/storage";
+import { verifyInterviewUpload } from "@/lib/interview/storage";
 import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { createClient } from "@/lib/supabase/server";
@@ -13,8 +14,13 @@ export async function POST(request: Request) {
   const access = await getPaidStudentApiAccess("/interview-practice/sessions");
   if (!access.ok) return access.response;
   const { profile } = access;
-  if (!(await checkRateLimit("interview-mock-complete", profile.id, request, 24, 3600)))
-    return NextResponse.json({ error: "Mock submission limit reached. Please try again later." }, { status: 429 });
+  if (
+    !(await checkRateLimit("interview-complete", profile.id, request, 30, 3600))
+  )
+    return NextResponse.json(
+      { error: "Interview submission limit reached. Please try again later." },
+      { status: 429 },
+    );
   const parsed = z
     .object({ videoId: z.string().uuid() })
     .safeParse(await request.json().catch(() => null));
@@ -36,27 +42,47 @@ export async function POST(request: Request) {
       { status: 404 },
     );
 
+  let createdIndividualResultId: string | null = null;
   try {
-    let s3Url: string | null = null;
-    if (video.s3_key && video.multipart_upload_id) {
-      const parts = Array.isArray(video.upload_parts)
-        ? (video.upload_parts as Array<{ ETag: string; PartNumber: number }>)
-        : [];
-      if (!parts.length)
-        return NextResponse.json(
-          { error: "No uploaded video chunks were found." },
-          { status: 400 },
-        );
-      s3Url = await completeVideoUpload({
-        key: video.s3_key,
-        uploadId: video.multipart_upload_id,
-        parts,
-      });
-    }
-
-    if (!s3Url || !video.mock_session_id || video.mock_position === null)
-      throw new Error("Mock answers require a durable object before processing.");
+    if (!video.s3_key)
+      throw new Error("Interview answers require a durable R2 object.");
+    const storageUrl = await verifyInterviewUpload({
+      key: video.s3_key,
+      expectedBytes: Number(video.byte_size),
+      expectedContentType: video.mime_type,
+    });
     const db = createServiceRoleClient();
+    let individualResultId = video.individual_result_id as string | null;
+    if (!video.mock_session_id && !individualResultId) {
+      const question = getInterviewQuestion(video.question_id);
+      if (!question) throw new Error("Interview question context is missing.");
+      individualResultId = crypto.randomUUID();
+      const { error: resultError } = await db
+        .from("interview_individual_results")
+        .insert({
+          id: individualResultId,
+          user_id: profile.id,
+          question_id: question.id,
+          question_text: question.text,
+          practice_area: question.practiceArea,
+          question_type: question.questionType,
+          specialty:
+            question.specialtyRelevance.find((item) => item !== "general") ??
+            "general",
+          status: "awaiting_evaluation",
+        });
+      if (resultError) throw resultError;
+      createdIndividualResultId = individualResultId;
+      const { error: videoResultError } = await db
+        .from("interview_videos")
+        .update({ individual_result_id: individualResultId })
+        .eq("id", video.id)
+        .eq("user_id", profile.id)
+        .eq("status", "uploading");
+      if (videoResultError) throw videoResultError;
+    }
+    if (!video.mock_session_id && !individualResultId)
+      throw new Error("Interview result context is missing.");
     const { data: answer, error: answerError } = await db
       .from("interview_processing_answers")
       .upsert(
@@ -64,9 +90,10 @@ export async function POST(request: Request) {
           user_id: profile.id,
           video_id: video.id,
           question_id: video.question_id,
-          mock_session_id: video.mock_session_id,
+          mock_session_id: video.mock_session_id ?? null,
+          individual_result_id: individualResultId,
           mock_position: video.mock_position,
-          storage_kind: "s3",
+          storage_kind: "r2",
           storage_reference: video.s3_key,
           status: "UPLOADED",
         },
@@ -74,7 +101,8 @@ export async function POST(request: Request) {
       )
       .select("id")
       .single();
-    if (answerError || !answer) throw answerError ?? new Error("Could not persist processing state.");
+    if (answerError || !answer)
+      throw answerError ?? new Error("Could not persist processing state.");
     // This transaction advances mock progress and finalizes the video together,
     // preventing a retry from leaving either lifecycle one step ahead.
     const { data: updated, error } = await db.rpc(
@@ -83,7 +111,7 @@ export async function POST(request: Request) {
         target_video_id: video.id,
         target_user_id: profile.id,
         target_status: "queued",
-        target_s3_url: s3Url,
+        target_s3_url: storageUrl,
         target_feedback: null,
       },
     );
@@ -91,9 +119,16 @@ export async function POST(request: Request) {
     if (!updated) throw new Error("Upload session is no longer active.");
     const queued = await enqueueInterviewTranscription(answer.id);
     if (queued)
-      await db.from("interview_processing_answers").update({ status: "QUEUED" }).eq("id", answer.id);
+      await db
+        .from("interview_processing_answers")
+        .update({ status: "QUEUED" })
+        .eq("id", answer.id);
     return NextResponse.json({
       videoId: video.id,
+      resultId: individualResultId ?? video.mock_session_id,
+      resultHref: individualResultId
+        ? `/interview-practice/results/practice/${individualResultId}`
+        : `/interview-practice/results/mock/${video.mock_session_id}`,
       queued: true,
       simulated: false,
       feedback: null,
@@ -111,6 +146,12 @@ export async function POST(request: Request) {
       .eq("id", video.id)
       .eq("user_id", profile.id)
       .eq("status", "uploading");
+    if (createdIndividualResultId)
+      await createServiceRoleClient()
+        .from("interview_individual_results")
+        .update({ status: "failed" })
+        .eq("id", createdIndividualResultId)
+        .eq("user_id", profile.id);
     return NextResponse.json(
       { error: "The upload could not be finalized. Please retry." },
       { status: 503 },

@@ -17,6 +17,11 @@ type Stage =
 const RECORDING_SECONDS = 120;
 const SAFE_UPLOAD_ERROR =
   "An error occured, please try again with a more concise anwser";
+const UPLOAD_MESSAGES = [
+  "We are analysing your answer",
+  "Please bear with us, perfection takes time…",
+  "Just a moment please…",
+];
 
 class UserFacingUploadError extends Error {}
 
@@ -56,6 +61,7 @@ export function InterviewRecorder({
   const [playbackUrl, setPlaybackUrl] = useState("");
   const [duration, setDuration] = useState(1);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessageIndex, setUploadMessageIndex] = useState(0);
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
   const [simulatedFeedback, setSimulatedFeedback] = useState(false);
   const [mdModal, setMdModal] = useState(false);
@@ -262,17 +268,36 @@ export function InterviewRecorder({
     return () => window.clearInterval(interval);
   }, [stage]);
 
+  useEffect(() => {
+    if (stage !== "uploading") {
+      setUploadMessageIndex(0);
+      return;
+    }
+    const interval = window.setInterval(
+      () =>
+        setUploadMessageIndex(
+          (current) => (current + 1) % UPLOAD_MESSAGES.length,
+        ),
+      3_500,
+    );
+    return () => window.clearInterval(interval);
+  }, [stage]);
+
   function stopRecording() {
     if (recorder.current?.state === "recording") recorder.current.stop();
   }
 
-  async function retryChunk(url: string, part: Blob) {
+  async function uploadToCloudflare(
+    url: string,
+    recording: Blob,
+    contentType: string,
+  ) {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
         const response = await fetch(url, {
           method: "PUT",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: part,
+          headers: { "Content-Type": contentType },
+          body: recording,
         });
         if (response.ok) return;
       } catch {
@@ -284,7 +309,7 @@ export function InterviewRecorder({
         );
     }
     throw new UserFacingUploadError(
-      "A video chunk could not be uploaded after three attempts.",
+      "The secure video upload could not be completed after three attempts.",
     );
   }
 
@@ -293,36 +318,13 @@ export function InterviewRecorder({
     setError("");
     setStage("uploading");
     setUploadProgress(2);
-    const started = Date.now();
     try {
-      if (!mockSessionId) {
-        if (!questionId)
-          throw new UserFacingUploadError(
-            "This question is missing its analysis identifier.",
-          );
-        const form = new FormData();
-        form.set("video", blob, `interview-${crypto.randomUUID()}.webm`);
-        form.set("questionId", questionId);
-        form.set("durationSeconds", String(duration));
-        form.set("width", String(recordingSettings.current.width));
-        form.set("height", String(recordingSettings.current.height));
-        setUploadProgress(20);
-        const response = await fetch("/api/interview/videos/individual", {
-          method: "POST",
-          body: form,
-        });
-        const completed = await parseUploadResponse<{
-          href?: string;
-          error?: string;
-        }>(response);
-        if (!response.ok || !completed.href)
-          throw new UserFacingUploadError(
-            completed.error ?? "Analysis could not be completed.",
-          );
-        setUploadProgress(100);
-        window.location.assign(completed.href);
-        return;
-      }
+      if (!questionId)
+        throw new UserFacingUploadError(
+          "This question is missing its analysis identifier.",
+        );
+      const contentType = blob.type || "video/webm";
+      setUploadProgress(10);
       const sessionResponse = await fetch("/api/interview/videos/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -332,7 +334,7 @@ export function InterviewRecorder({
           question,
           mockSessionId,
           mockPosition,
-          mimeType: blob.type || "video/webm",
+          mimeType: contentType,
           durationSeconds: duration,
           byteSize: blob.size,
           width: recordingSettings.current.width,
@@ -346,83 +348,40 @@ export function InterviewRecorder({
       });
       const session = await parseUploadResponse<{
         videoId?: string;
-        storageConfigured?: boolean;
-        chunkSize?: number;
+        uploadUrl?: string;
+        resultHref?: string;
         error?: string;
       }>(sessionResponse);
-      if (!sessionResponse.ok || !session.videoId)
+      if (!sessionResponse.ok || !session.videoId || !session.uploadUrl)
         throw new UserFacingUploadError(
           session.error ?? "Upload could not be started.",
         );
-      if (session.storageConfigured) {
-        const chunkSize = session.chunkSize ?? 5 * 1024 * 1024;
-        const totalParts = Math.ceil(blob.size / chunkSize);
-        for (let index = 0; index < totalParts; index += 1) {
-          const part = blob.slice(
-            index * chunkSize,
-            Math.min(blob.size, (index + 1) * chunkSize),
-          );
-          await retryChunk(
-            `/api/interview/videos/chunk?videoId=${session.videoId}&partNumber=${index + 1}`,
-            part,
-          );
-          setUploadProgress(Math.round(((index + 1) / totalParts) * 70));
-        }
-      } else setUploadProgress(70);
+      setUploadProgress(25);
+      await uploadToCloudflare(session.uploadUrl, blob, contentType);
+      setUploadProgress(75);
       const completeResponse = await fetch("/api/interview/videos/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ videoId: session.videoId }),
       });
       const complete = await parseUploadResponse<{
-        feedback?: InterviewFeedback | null;
         queued?: boolean;
-        simulated?: boolean;
+        resultHref?: string;
         error?: string;
       }>(completeResponse);
-      if (!completeResponse.ok)
+      if (!completeResponse.ok || !complete.queued)
         throw new UserFacingUploadError(
           complete.error ?? "Analysis could not be started.",
         );
-      setUploadProgress(82);
-      setSimulatedFeedback(Boolean(complete.simulated));
-      if (complete.queued && mockSessionId) {
-        setUploadProgress(100);
-        if (nextHref) window.location.assign(nextHref);
-        return;
-      }
-      let result = complete.feedback ?? null;
-      if (complete.queued) {
-        for (let attempt = 0; attempt < 30 && !result; attempt += 1) {
-          await new Promise((resolve) => window.setTimeout(resolve, 4_000));
-          const statusResponse = await fetch(
-            `/api/interview/videos/${session.videoId}/status`,
-            { cache: "no-store" },
-          );
-          const status = await parseUploadResponse<{
-            feedback?: InterviewFeedback | null;
-            status?: string;
-            error?: string;
-          }>(statusResponse);
-          if (status.status === "failed")
-            throw new UserFacingUploadError(status.error ?? "Analysis failed.");
-          result = status.feedback ?? null;
-          setUploadProgress(Math.min(98, 82 + attempt));
-        }
-      } else {
-        const elapsed = Date.now() - started;
-        if (elapsed < 22_000)
-          await new Promise((resolve) =>
-            window.setTimeout(resolve, 22_000 - elapsed),
-          );
-      }
-      if (!result)
-        throw new UserFacingUploadError(
-          "Analysis is taking longer than expected. Your video remains safely queued.",
-        );
-      setFeedback(result);
       setUploadProgress(100);
-      setStage("feedback");
+      const destination = mockSessionId
+        ? (nextHref ?? complete.resultHref)
+        : (complete.resultHref ?? session.resultHref);
+      if (!destination)
+        throw new UserFacingUploadError(
+          "Your recording is saved, but the results page could not be opened.",
+        );
+      window.location.assign(destination);
     } catch (uploadError) {
       setError(
         uploadError instanceof UserFacingUploadError
@@ -622,15 +581,19 @@ export function InterviewRecorder({
               <div className="mt-7 rounded-xl bg-blue-50 p-8 text-center">
                 <LoadingSpinner
                   size="lg"
-                  label="Uploading and analysing recording"
+                  label={UPLOAD_MESSAGES[uploadMessageIndex]}
                 />
                 <h3 className="mt-5 text-xl font-bold">
-                  Uploading and analysing your response
+                  {UPLOAD_MESSAGES[uploadMessageIndex]}
                 </h3>
                 <p className="mt-2 text-slate-600">
-                  We are transcribing your response and applying the versioned
-                  competency rubric. Delivery insights remain separate from
-                  competency scores.
+                  Your recording is being stored securely in Cloudflare R2 and
+                  queued for analysis.
+                </p>
+                <p className="mx-auto mt-2 max-w-2xl text-sm font-medium text-blue-900">
+                  Once the upload finishes, you may visit other screens and
+                  return to Interview Results at any time. We will show a
+                  notification when your analysis is complete.
                 </p>
                 <div className="mx-auto mt-5 h-2 max-w-lg overflow-hidden rounded-full bg-blue-100">
                   <div

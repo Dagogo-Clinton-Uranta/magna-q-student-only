@@ -73,8 +73,8 @@ export default async function FullMockResultPage({
             {completed ? "Competency scorecard" : "Mock interview submitted"}
           </h2>
           <p className="mt-2 text-slate-600">
-            Started {formatDate(session.started_at)} · {processingAnswers?.length ?? 0} of 8
-            answers submitted
+            Started {formatDate(session.started_at)} ·{" "}
+            {processingAnswers?.length ?? 0} of 8 answers submitted
           </p>
         </div>
         <Link href="/interview-practice/mock" className="button-primary">
@@ -84,13 +84,12 @@ export default async function FullMockResultPage({
 
       {!completed && (
         <section className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
-          <h3 className="font-bold">
-            Your mock interview is being analysed
-          </h3>
+          <h3 className="font-bold">Your mock interview is being analysed</h3>
           <p className="mt-2 text-sm leading-6">
-            Each accepted recording is safely stored and processed with retry
-            protection. You may leave this page and return later; the scorecard
-            appears only after all eight valid evaluations are complete.
+            Each accepted recording is securely stored in Cloudflare R2 and
+            processed with retry protection. You may visit other screens and
+            return to Interview Results whenever you are ready. A notification
+            will appear after all eight valid evaluations are complete.
           </p>
         </section>
       )}
@@ -161,13 +160,32 @@ export default async function FullMockResultPage({
                   {evaluation ? (
                     <>
                       <EvaluationDetails evaluation={evaluation} />
-                      <DeliveryInsights metrics={processingAnswers?.find((item) => item.question_id === question!.id)?.delivery_metrics} />
+                      <DeliveryInsights
+                        metrics={
+                          processingAnswers?.find(
+                            (item) => item.question_id === question!.id,
+                          )?.delivery_metrics
+                        }
+                      />
                     </>
                   ) : (
                     <div className="mt-4 text-slate-600">
-                      <p>{processingAnswers?.find((item) => item.question_id === question!.id)?.user_error_message ?? "Recording submitted; rubric evaluation has not been finalized."}</p>
-                      {processingAnswers?.find((item) => item.question_id === question!.id)?.status === "FAILED" && (
-                        <ProcessingRetry answerId={processingAnswers.find((item) => item.question_id === question!.id)!.id} />
+                      <p>
+                        {processingAnswers?.find(
+                          (item) => item.question_id === question!.id,
+                        )?.user_error_message ??
+                          "Recording submitted; rubric evaluation has not been finalized."}
+                      </p>
+                      {processingAnswers?.find(
+                        (item) => item.question_id === question!.id,
+                      )?.status === "FAILED" && (
+                        <ProcessingRetry
+                          answerId={
+                            processingAnswers.find(
+                              (item) => item.question_id === question!.id,
+                            )!.id
+                          }
+                        />
                       )}
                     </div>
                   )}

@@ -90,6 +90,16 @@ export default async function IndividualResultPage({
           )}
         </div>
       </div>
+      {result.status !== "completed" && (
+        <section className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
+          <h3 className="font-bold">Your answer is being analysed</h3>
+          <p className="mt-2 text-sm leading-6">
+            Your recording is securely stored in Cloudflare R2. You may visit
+            other screens and return to Interview Results whenever you are
+            ready. A notification will appear when the analysis is complete.
+          </p>
+        </section>
+      )}
       <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
         <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
           Practice Assessment

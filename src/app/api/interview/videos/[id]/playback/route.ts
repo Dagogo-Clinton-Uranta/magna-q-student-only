@@ -32,7 +32,7 @@ export async function GET(
   const { data } = await query.maybeSingle();
   if (!data?.s3_key)
     return NextResponse.json(
-      { error: "Video is not available in simulated mode." },
+      { error: "This recording is not available." },
       { status: 404 },
     );
   const signedUrl = await getInterviewVideoUrl(data.s3_key);

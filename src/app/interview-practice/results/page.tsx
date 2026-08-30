@@ -61,16 +61,36 @@ export default async function InterviewResultsPage() {
       </WorkspaceHero>
       {Boolean(pendingMocks?.length || pendingIndividual?.length) && (
         <section className="mt-7 rounded-xl border border-blue-200 bg-blue-50 p-5">
-          <h2 className="text-lg font-bold text-blue-950">Processing and unfinished practice</h2>
+          <h2 className="text-lg font-bold text-blue-950">
+            Processing and unfinished practice
+          </h2>
           <ul className="mt-3 space-y-2 text-sm text-blue-900">
             {(pendingMocks ?? []).map((item) => (
               <li key={item.id}>
-                <Link className="font-bold underline" href={item.status === "in_progress" ? `/interview-practice/mock/${item.id}/${item.current_question_index}` : `/interview-practice/results/mock/${item.id}`}>
+                <Link
+                  className="font-bold underline"
+                  href={
+                    item.status === "in_progress"
+                      ? `/interview-practice/mock/${item.id}/${item.current_question_index}`
+                      : `/interview-practice/results/mock/${item.id}`
+                  }
+                >
                   {String(item.specialty).replaceAll("-", " ")} mock
-                </Link>{" "}— {item.status === "awaiting_evaluation" ? "submitted and being analysed; you may leave and return later" : `${item.current_question_index} of 8 submitted`}
+                </Link>{" "}
+                —{" "}
+                {item.status === "awaiting_evaluation"
+                  ? "securely stored and being analysed; you may visit other screens and return later"
+                  : `${item.current_question_index} of 8 submitted`}
               </li>
             ))}
-            {(pendingIndividual ?? []).map((item) => <li key={item.id}>{item.question_text} — {item.status === "failed" ? "analysis failed; return to the practice question to retry your local recording" : "processing your answer"}</li>)}
+            {(pendingIndividual ?? []).map((item) => (
+              <li key={item.id}>
+                {item.question_text} —{" "}
+                {item.status === "failed"
+                  ? "analysis failed; return to the practice question and try again"
+                  : "securely stored and processing; you may return to these results later"}
+              </li>
+            ))}
           </ul>
         </section>
       )}
