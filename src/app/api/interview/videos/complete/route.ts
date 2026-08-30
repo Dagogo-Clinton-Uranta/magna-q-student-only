@@ -5,7 +5,6 @@ import { enqueueInterviewTranscription } from "@/lib/interview/queue";
 import { verifyInterviewUpload } from "@/lib/interview/storage";
 import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
-import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
@@ -29,14 +28,15 @@ export async function POST(request: Request) {
       { error: "Invalid completion request." },
       { status: 400 },
     );
-  const supabase = await createClient();
-  const { data: video } = await supabase
+  const db = createServiceRoleClient();
+  const { data: video } = await db
     .from("interview_videos")
     .select("*")
     .eq("id", parsed.data.videoId)
     .eq("user_id", profile.id)
+    .eq("status", "uploading")
     .maybeSingle();
-  if (!video || video.status !== "uploading")
+  if (!video)
     return NextResponse.json(
       { error: "Upload session not found." },
       { status: 404 },
@@ -51,7 +51,6 @@ export async function POST(request: Request) {
       expectedBytes: Number(video.byte_size),
       expectedContentType: video.mime_type,
     });
-    const db = createServiceRoleClient();
     let individualResultId = video.individual_result_id as string | null;
     if (!video.mock_session_id && !individualResultId) {
       const question = getInterviewQuestion(video.question_id);
