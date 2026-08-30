@@ -40,9 +40,25 @@ const db = createClient(supabaseUrl, serviceKey, {
   auth: { persistSession: false },
 });
 
-void recoverDurableJobs().catch((error) => {
-  console.error("Interview job recovery failed", error);
-});
+let recoveryRunning = false;
+
+async function runDurableRecovery() {
+  if (recoveryRunning) return;
+  recoveryRunning = true;
+  try {
+    await recoverDurableJobs();
+  } catch (error) {
+    console.error("Interview job recovery failed", error);
+  } finally {
+    recoveryRunning = false;
+  }
+}
+
+void runDurableRecovery();
+setInterval(
+  () => void runDurableRecovery(),
+  envInt("INTERVIEW_RECOVERY_INTERVAL_MS", 30_000),
+);
 
 new Worker(
   INTERVIEW_TRANSCRIPTION_QUEUE,

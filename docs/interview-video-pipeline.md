@@ -22,6 +22,7 @@ INTERVIEW_VIDEO_MAX_BYTES=52428800
 INTERVIEW_VIDEO_RETENTION_HOURS=24
 INTERVIEW_JOB_MAX_ATTEMPTS=5
 INTERVIEW_JOB_BACKOFF_MS=5000
+INTERVIEW_RECOVERY_INTERVAL_MS=30000
 INTERVIEW_TRANSCRIPTION_CONCURRENCY=3
 INTERVIEW_EVALUATION_CONCURRENCY=2
 INTERVIEW_FINALIZATION_CONCURRENCY=1
@@ -68,7 +69,7 @@ The database records an answer-level durable outbox state, then BullMQ runs thre
 - `interview-evaluation`
 - `mock-finalization`
 
-Start the independent worker with `npm run worker:interviews`. It recovers durable jobs from database statuses when it starts. Transcription is persisted before evaluation. Finalization is refused unless exactly eight answers and eight evaluations are present. Jobs are idempotent and use configured exponential retry.
+Start the independent worker with `npm run worker:interviews`. It recovers durable jobs from database statuses when it starts and every 30 seconds by default, so a temporary queue interruption does not leave uploaded recordings idle. Transcription is persisted before evaluation. Finalization is refused unless exactly eight answers and eight evaluations are present. Jobs are idempotent and use configured exponential retry.
 
 ## Evaluation boundary
 

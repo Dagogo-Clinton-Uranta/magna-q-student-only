@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { CompetencyProfile } from "@/components/interview/competency-profile";
 import { DeliveryInsights } from "@/components/interview/delivery-insights";
+import { InterviewResultRefresh } from "@/components/interview/interview-result-refresh";
 import { requirePaidStudent } from "@/lib/auth/guards";
 import {
   getInterviewPracticeArea,
@@ -92,6 +93,7 @@ export default async function IndividualResultPage({
       </div>
       {result.status !== "completed" && (
         <section className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
+          <InterviewResultRefresh />
           <h3 className="font-bold">Your answer is being analysed</h3>
           <p className="mt-2 text-sm leading-6">
             Your recording is securely stored in Cloudflare R2. You may visit

@@ -38,15 +38,15 @@ export async function GET(request: Request) {
     notifications: [
       ...(individual ?? []).map((result) => ({
         id: `individual:${result.id}`,
-        title: "Your interview answer is ready",
-        body: `Analysis is complete for “${result.question_text}”.`,
+        title: "Your interview analysis is complete",
+        body: `Your analysis for “${result.question_text}” is ready. Return to Interview Results to review it.`,
         href: `/interview-practice/results/practice/${result.id}`,
         completedAt: result.completed_at,
       })),
       ...(mocks ?? []).map((session) => ({
         id: `mock:${session.id}`,
-        title: "Your mock interview analysis is ready",
-        body: `All eight ${String(session.specialty).replaceAll("-", " ")} interview answers have been analysed.`,
+        title: "Your interview analysis is complete",
+        body: `All eight ${String(session.specialty).replaceAll("-", " ")} interview answers have been analysed. Return to Interview Results to review them.`,
         href: `/interview-practice/results/mock/${session.id}`,
         completedAt: session.completed_at,
       })),

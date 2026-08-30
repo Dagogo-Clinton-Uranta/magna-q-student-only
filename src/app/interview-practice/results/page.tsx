@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
+import { InterviewResultRefresh } from "@/components/interview/interview-result-refresh";
 import { requirePaidStudent } from "@/lib/auth/guards";
 import { getInterviewPracticeArea } from "@/lib/interview/questions";
 import { createClient } from "@/lib/supabase/server";
@@ -61,6 +62,7 @@ export default async function InterviewResultsPage() {
       </WorkspaceHero>
       {Boolean(pendingMocks?.length || pendingIndividual?.length) && (
         <section className="mt-7 rounded-xl border border-blue-200 bg-blue-50 p-5">
+          <InterviewResultRefresh />
           <h2 className="text-lg font-bold text-blue-950">
             Processing and unfinished practice
           </h2>

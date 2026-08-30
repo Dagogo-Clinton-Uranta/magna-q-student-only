@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { CompetencyProfile } from "@/components/interview/competency-profile";
 import { DeliveryInsights } from "@/components/interview/delivery-insights";
+import { InterviewResultRefresh } from "@/components/interview/interview-result-refresh";
 import { ProcessingRetry } from "@/components/interview/processing-retry";
 import { requirePaidStudent } from "@/lib/auth/guards";
 import {
@@ -84,6 +85,7 @@ export default async function FullMockResultPage({
 
       {!completed && (
         <section className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
+          <InterviewResultRefresh />
           <h3 className="font-bold">Your mock interview is being analysed</h3>
           <p className="mt-2 text-sm leading-6">
             Each accepted recording is securely stored in Cloudflare R2 and

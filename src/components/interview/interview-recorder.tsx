@@ -13,6 +13,7 @@ type Stage =
   | "recording"
   | "playback"
   | "uploading"
+  | "uploaded"
   | "feedback";
 const RECORDING_SECONDS = 120;
 const SAFE_UPLOAD_ERROR =
@@ -62,6 +63,7 @@ export function InterviewRecorder({
   const [duration, setDuration] = useState(1);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessageIndex, setUploadMessageIndex] = useState(0);
+  const [uploadedDestination, setUploadedDestination] = useState("");
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
   const [simulatedFeedback, setSimulatedFeedback] = useState(false);
   const [mdModal, setMdModal] = useState(false);
@@ -283,6 +285,15 @@ export function InterviewRecorder({
     return () => window.clearInterval(interval);
   }, [stage]);
 
+  useEffect(() => {
+    if (stage !== "uploaded" || !uploadedDestination) return;
+    const timeout = window.setTimeout(
+      () => window.location.assign(uploadedDestination),
+      4_000,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [stage, uploadedDestination]);
+
   function stopRecording() {
     if (recorder.current?.state === "recording") recorder.current.stop();
   }
@@ -381,7 +392,8 @@ export function InterviewRecorder({
         throw new UserFacingUploadError(
           "Your recording is saved, but the results page could not be opened.",
         );
-      window.location.assign(destination);
+      setUploadedDestination(destination);
+      setStage("uploaded");
     } catch (uploadError) {
       setError(
         uploadError instanceof UserFacingUploadError
@@ -398,6 +410,7 @@ export function InterviewRecorder({
     setBlob(null);
     setFeedback(null);
     setSimulatedFeedback(false);
+    setUploadedDestination("");
     setRemaining(RECORDING_SECONDS);
     setStage("ready");
   }
@@ -603,6 +616,45 @@ export function InterviewRecorder({
                 </div>
                 <p className="mt-2 text-sm font-semibold text-blue-900">
                   {uploadProgress}%
+                </p>
+              </div>
+            )}
+
+            {stage === "uploaded" && (
+              <div
+                role="status"
+                className="mt-7 rounded-xl border border-emerald-300 bg-emerald-50 p-8 text-center"
+              >
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-700 text-2xl font-bold text-white">
+                  ✓
+                </div>
+                <h3 className="mt-5 text-xl font-bold text-emerald-950">
+                  Your recording has been uploaded
+                </h3>
+                <p className="mx-auto mt-2 max-w-2xl leading-7 text-emerald-900">
+                  Your answer is securely stored and has been sent for analysis
+                  immediately. Results will be displayed as soon as processing
+                  is complete.
+                </p>
+                <p className="mx-auto mt-3 max-w-2xl font-bold text-emerald-950">
+                  You can always come back to view your results on the Interview
+                  Results page.
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <Link
+                    href="/interview-practice/results"
+                    className="button-secondary"
+                  >
+                    View Interview Results
+                  </Link>
+                  {uploadedDestination && (
+                    <a href={uploadedDestination} className="button-primary">
+                      Continue now
+                    </a>
+                  )}
+                </div>
+                <p className="mt-3 text-xs text-emerald-800">
+                  Continuing automatically…
                 </p>
               </div>
             )}

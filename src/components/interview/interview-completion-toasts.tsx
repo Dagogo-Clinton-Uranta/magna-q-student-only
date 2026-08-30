@@ -15,7 +15,9 @@ const SEEN_KEY = "magna-q-seen-interview-completions";
 
 export function InterviewCompletionToasts() {
   const [queue, setQueue] = useState<CompletionNotification[]>([]);
-  const since = useRef(new Date(Date.now() - 30_000).toISOString());
+  const since = useRef(
+    new Date(Date.now() - 24 * 60 * 60 * 1_000).toISOString(),
+  );
   const active = queue[0];
 
   useEffect(() => {
@@ -35,12 +37,12 @@ export function InterviewCompletionToasts() {
         since.current = new Date().toISOString();
         if (cancelled || notifications.length === 0) return;
         const seen = new Set<string>(
-          JSON.parse(sessionStorage.getItem(SEEN_KEY) ?? "[]") as string[],
+          JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[],
         );
         const unseen = notifications.filter((item) => !seen.has(item.id));
         if (unseen.length === 0) return;
         unseen.forEach((item) => seen.add(item.id));
-        sessionStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-50)));
+        localStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-50)));
         setQueue((current) => [
           ...current,
           ...unseen.filter(
@@ -53,7 +55,7 @@ export function InterviewCompletionToasts() {
     }
 
     void checkForCompletedInterviews();
-    const interval = window.setInterval(checkForCompletedInterviews, 10_000);
+    const interval = window.setInterval(checkForCompletedInterviews, 5_000);
     return () => {
       cancelled = true;
       window.clearInterval(interval);
@@ -91,7 +93,7 @@ export function InterviewCompletionToasts() {
         </button>
       </div>
       <Link href={active.href} className="button-primary mt-3 inline-flex">
-        View results
+        View latest results
       </Link>
     </aside>
   );
