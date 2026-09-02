@@ -10,7 +10,6 @@
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "next lint",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "vitest run",
@@ -18,11 +17,11 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:db": "bash tests/integration/verify-migrations.sh",
     "test:e2e": "playwright test",
-    "worker:interviews": "tsx scripts/interview-analysis-worker.ts",
     "seed:interview-rubrics": "tsx scripts/seed-interview-rubrics.ts",
     "seed:residency-events": "tsx scripts/import-residency-events.ts",
     "migrate:chat": "tsx scripts/migrate-chat-mongodb.ts",
-    "worker:chat": "tsx scripts/chat-moderation-worker.ts"
+    "worker:chat": "tsx scripts/chat-moderation-worker.ts",
+    "lint": "next lint"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1106.0",
@@ -41,7 +40,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "server-only": "^0.0.1",
-    "stripe": "^22.5.0",
+    "stripe": "22.5.0",
+    "tsx": "^4.19.2",
     "ws": "^8.21.3",
     "zod": "^3.24.1"
   },
@@ -62,7 +62,6 @@
     "prettier-plugin-tailwindcss": "^0.6.11",
     "supabase": "^2.109.1",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
   }

@@ -128,7 +128,7 @@ export async function POST(request: Request) {
       resultHref: individualResultId
         ? `/interview-practice/results/practice/${individualResultId}`
         : `/interview-practice/results/mock/${video.mock_session_id}`,
-      queued: true,
+      queued,
       simulated: false,
       feedback: null,
       processingStatus: queued ? "QUEUED" : "UPLOADED",

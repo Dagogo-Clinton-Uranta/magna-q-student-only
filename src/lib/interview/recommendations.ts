@@ -1,4 +1,7 @@
-import type { InterviewQuestion, InterviewSpecialtyId } from "@/lib/interview/questions";
+import type {
+  InterviewQuestion,
+  InterviewSpecialtyId,
+} from "@/lib/interview/questions";
 
 export function recommendInterviewQuestions({
   questions,

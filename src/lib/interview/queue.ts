@@ -33,8 +33,7 @@ async function enqueue(queueName: string, stage: string, id: string) {
     const existing = await queue.getJob(options.jobId);
     if (existing && (await existing.getState()) === "failed")
       await existing.retry();
-    else if (!existing)
-      await queue.add(stage, { id }, options);
+    else if (!existing) await queue.add(stage, { id }, options);
     return true;
   } finally {
     await queue.close();

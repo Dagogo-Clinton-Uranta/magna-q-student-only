@@ -22,9 +22,7 @@ describe("interview recommendations", () => {
     expect(
       result.every((question) =>
         question.competencies.some((id) =>
-          ["patient-safety-orientation", "appropriate-escalation"].includes(
-            id,
-          ),
+          ["patient-safety-orientation", "appropriate-escalation"].includes(id),
         ),
       ),
     ).toBe(true);

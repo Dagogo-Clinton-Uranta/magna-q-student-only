@@ -2,14 +2,9 @@
 
 The app uses private Cloudflare R2 object storage for every individual and mock-interview recording. Browser uploads go directly to R2 with short-lived, content-type-bound presigned PUT URLs, so video bytes never pass through the Vercel Function request-body limit.
 
-## Required server-only configuration
+## Shared web-application configuration
 
 ```bash
-DEEPGRAM_API_KEY=
-OPENAI_API_KEY=
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_INTERVIEW_EVALUATION_MODEL=gpt-5.6-luna
-
 REDIS_URL=
 CLOUDFLARE_R2_ACCOUNT_ID=
 CLOUDFLARE_R2_ACCESS_KEY_ID=
@@ -22,14 +17,19 @@ INTERVIEW_VIDEO_MAX_BYTES=52428800
 INTERVIEW_VIDEO_RETENTION_HOURS=24
 INTERVIEW_JOB_MAX_ATTEMPTS=5
 INTERVIEW_JOB_BACKOFF_MS=5000
-INTERVIEW_RECOVERY_INTERVAL_MS=30000
-INTERVIEW_TRANSCRIPTION_CONCURRENCY=3
-INTERVIEW_EVALUATION_CONCURRENCY=2
-INTERVIEW_FINALIZATION_CONCURRENCY=1
+NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-Never prefix provider or storage secrets with `NEXT_PUBLIC_`. Add the same R2 variables to both the Vercel project and the separately deployed interview worker. Only short-lived presigned URLs are sent to browsers; R2 credentials remain server-only.
+Use the exact same native `redis://` or `rediss://` URL in Vercel and Railway.
+Do not use an Upstash REST URL or include `REDIS_URL=` inside the value. Add the
+same Supabase project and R2 variables to both deployments. Only short-lived
+presigned URLs are sent to browsers; R2 credentials remain server-only.
+
+The Railway worker additionally requires `DEEPGRAM_API_KEY`, `OPENAI_API_KEY`,
+`OPENAI_BASE_URL`, `OPENAI_INTERVIEW_EVALUATION_MODEL`, and its concurrency and
+recovery settings. Those processing credentials are not required by this web
+application's interview enqueue path.
 
 ## Cloudflare R2 setup
 
@@ -69,7 +69,26 @@ The database records an answer-level durable outbox state, then BullMQ runs thre
 - `interview-evaluation`
 - `mock-finalization`
 
-Start the independent worker with `npm run worker:interviews`. It recovers durable jobs from database statuses when it starts and every 30 seconds by default, so a temporary queue interruption does not leave uploaded recordings idle. Transcription is persisted before evaluation. Finalization is refused unless exactly eight answers and eight evaluations are present. Jobs are idempotent and use configured exponential retry.
+Start the independent Railway worker from its own repository with
+`npm run worker:interviews`. Do not run that command in this web-application
+repository. The worker recovers durable jobs from database statuses when it
+starts and every 30 seconds by default, so a temporary queue interruption does
+not leave uploaded recordings idle. Transcription is persisted before
+evaluation. Finalization is refused unless exactly eight answers and eight
+evaluations are present. Jobs are idempotent and use exponential retry.
+
+## Smoke test
+
+1. Redeploy both applications after setting the shared variables.
+2. Upload and complete one interview answer in this application.
+3. Confirm a job appears in Redis on `interview-transcription`.
+4. Watch Railway logs for `interview_transcribed`, followed by
+   `interview_evaluated`.
+5. Confirm the corresponding `interview_processing_answers.status` value in
+   Supabase advances to `EVALUATED`.
+
+No `WORKER_URL`, Railway public domain, or HTTP health-check path is needed;
+Redis is the connection between the applications.
 
 ## Evaluation boundary
 

@@ -346,18 +346,16 @@ async function replaceRecommendations(
     excludedQuestionIds: input.excluded,
   });
   if (recommended.length)
-    await db
-      .from("interview_result_recommendations")
-      .insert(
-        recommended.map((question, index) => ({
-          user_id: input.userId,
-          mock_session_id: input.sessionId ?? null,
-          individual_result_id: input.resultId ?? null,
-          question_id: question.id,
-          rank: index + 1,
-          reason_competency_id: input.priorities[0] ?? question.competencies[0],
-        })),
-      );
+    await db.from("interview_result_recommendations").insert(
+      recommended.map((question, index) => ({
+        user_id: input.userId,
+        mock_session_id: input.sessionId ?? null,
+        individual_result_id: input.resultId ?? null,
+        question_id: question.id,
+        rank: index + 1,
+        reason_competency_id: input.priorities[0] ?? question.competencies[0],
+      })),
+    );
 }
 
 export async function markAnswerFailed(
