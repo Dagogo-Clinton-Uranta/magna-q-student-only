@@ -17,6 +17,8 @@ export const RESIDENCY_DIRECTORY_COLUMNS = [
   "h1b_sponsorship",
   "visa_filter_ready",
   "visa_friendliness",
+  "img_resident_percentage",
+  "img_resident_reporting_year",
 ].join(",");
 
 export const RESIDENCY_DETAIL_COLUMNS = [
@@ -55,6 +57,8 @@ export const RESIDENCY_DETAIL_COLUMNS = [
   "research_rotation",
   "verification_status",
   "current_information_warning",
+  "img_resident_percentage",
+  "img_resident_reporting_year",
 ].join(",");
 
 export type ResidencyDirectoryRow = {
@@ -74,6 +78,8 @@ export type ResidencyDirectoryRow = {
   h1b_sponsorship: string | null;
   visa_filter_ready: boolean | null;
   visa_friendliness: string | null;
+  img_resident_percentage: number | null;
+  img_resident_reporting_year: number | null;
 };
 
 export type ResidencyDetail = ResidencyDirectoryRow & {
@@ -119,6 +125,13 @@ export const VISA_FILTERS = [
 
 export type VisaFilter = (typeof VISA_FILTERS)[number]["value"];
 
+export const DIRECTORY_SORT_OPTIONS = [
+  { value: "default", label: "Default directory order" },
+  { value: "img-desc", label: "Highest IMG percentage first" },
+] as const;
+
+export type DirectorySort = (typeof DIRECTORY_SORT_OPTIONS)[number]["value"];
+
 export function getDirectoryResearchDate(referenceDate = new Date()) {
   const previousMonthOnTheTwentyFirst = new Date(
     Date.UTC(
@@ -138,6 +151,10 @@ export function getDirectoryResearchDate(referenceDate = new Date()) {
 
 export function isVisaFilter(value: string): value is VisaFilter {
   return VISA_FILTERS.some((option) => option.value === value);
+}
+
+export function isDirectorySort(value: string): value is DirectorySort {
+  return DIRECTORY_SORT_OPTIONS.some((option) => option.value === value);
 }
 
 export function parseFilterOptions(value: unknown): ResidencyFilterOptions {
@@ -174,16 +191,22 @@ export function directoryHref({
   specialty,
   location,
   visa,
+  sort,
+  imgDataOnly,
 }: {
   page: number;
   specialty?: string;
   location?: string;
   visa?: string;
+  sort?: string;
+  imgDataOnly?: boolean;
 }) {
   const params = new URLSearchParams();
   if (specialty) params.set("specialty", specialty);
   if (location) params.set("location", location);
   if (visa) params.set("visa", visa);
+  if (sort && sort !== "default") params.set("sort", sort);
+  if (imgDataOnly) params.set("imgData", "available");
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return `/resources/residency-directory${query ? `?${query}` : ""}`;

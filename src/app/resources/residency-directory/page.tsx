@@ -7,7 +7,9 @@ import { SearchableFilter } from "@/components/resources/searchable-filter";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
   directoryHref,
+  DIRECTORY_SORT_OPTIONS,
   getDirectoryResearchDate,
+  isDirectorySort,
   isVisaFilter,
   parseFilterOptions,
   RESIDENCIES_PER_PAGE,
@@ -27,6 +29,8 @@ export default async function ResidencyDirectoryPage({
     specialty?: SearchValue;
     location?: SearchValue;
     visa?: SearchValue;
+    sort?: SearchValue;
+    imgData?: SearchValue;
   }>;
 }) {
   const profile = await requireOnboardedProfile();
@@ -41,6 +45,7 @@ export default async function ResidencyDirectoryPage({
   const requestedSpecialty = firstValue(requestedFilters.specialty);
   const requestedLocation = firstValue(requestedFilters.location);
   const requestedVisa = firstValue(requestedFilters.visa);
+  const requestedSort = firstValue(requestedFilters.sort);
   const specialty = options.specialties.some(
     (option) => option.value === requestedSpecialty,
   )
@@ -52,19 +57,27 @@ export default async function ResidencyDirectoryPage({
     ? requestedLocation
     : "";
   const visa = isVisaFilter(requestedVisa) ? requestedVisa : "";
+  const sort = isDirectorySort(requestedSort) ? requestedSort : "default";
+  const imgDataOnly = firstValue(requestedFilters.imgData) === "available";
   const requestedPage = Number(firstValue(requestedFilters.page) || "1");
 
   if (!Number.isInteger(requestedPage) || requestedPage < 1) {
-    redirect(directoryHref({ page: 1, specialty, location, visa }));
+    redirect(
+      directoryHref({
+        page: 1,
+        specialty,
+        location,
+        visa,
+        sort,
+        imgDataOnly,
+      }),
+    );
   }
 
   const from = (requestedPage - 1) * RESIDENCIES_PER_PAGE;
   let directoryQuery = supabase
     .from("residencies")
-    .select(RESIDENCY_DIRECTORY_COLUMNS, { count: "exact" })
-    .order("source_order", { ascending: true })
-    .order("id", { ascending: true })
-    .range(from, from + RESIDENCIES_PER_PAGE - 1);
+    .select(RESIDENCY_DIRECTORY_COLUMNS, { count: "exact" });
 
   if (specialty) {
     directoryQuery = directoryQuery.eq("specialty", specialty);
@@ -101,6 +114,29 @@ export default async function ResidencyDirectoryPage({
     directoryQuery = directoryQuery.eq("visa_filter_ready", false);
   }
 
+  if (imgDataOnly) {
+    directoryQuery = directoryQuery.not("img_resident_percentage", "is", null);
+  }
+
+  if (sort === "img-desc") {
+    directoryQuery = directoryQuery
+      .order("img_resident_percentage", {
+        ascending: false,
+        nullsFirst: false,
+      })
+      .order("source_order", { ascending: true })
+      .order("id", { ascending: true });
+  } else {
+    directoryQuery = directoryQuery
+      .order("source_order", { ascending: true })
+      .order("id", { ascending: true });
+  }
+
+  directoryQuery = directoryQuery.range(
+    from,
+    from + RESIDENCIES_PER_PAGE - 1,
+  );
+
   const { data, count, error } = await directoryQuery;
   if (error) throw new Error("Unable to load the residency directory.");
 
@@ -110,7 +146,16 @@ export default async function ResidencyDirectoryPage({
     Math.ceil(totalResults / RESIDENCIES_PER_PAGE),
   );
   if (requestedPage > totalPages) {
-    redirect(directoryHref({ page: totalPages, specialty, location, visa }));
+    redirect(
+      directoryHref({
+        page: totalPages,
+        specialty,
+        location,
+        visa,
+        sort,
+        imgDataOnly,
+      }),
+    );
   }
 
   const rows = (data ?? []) as unknown as ResidencyDirectoryRow[];
@@ -153,7 +198,7 @@ export default async function ResidencyDirectoryPage({
 
       <form
         method="get"
-        className="mt-6 grid gap-4 border border-slate-200 bg-white p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(13rem,0.75fr)_auto] lg:items-end"
+        className="mt-6 grid gap-4 border border-slate-200 bg-white p-5 lg:grid-cols-2 xl:grid-cols-4 xl:items-end"
       >
         <SearchableFilter
           key={`specialty-${specialty}`}
@@ -192,18 +237,54 @@ export default async function ResidencyDirectoryPage({
             ))}
           </select>
         </div>
-        <div className="flex gap-2">
-          <button type="submit" className="button-primary min-w-28">
-            Filter
-          </button>
-          {(specialty || location || visa) && (
-            <Link
-              href="/resources/residency-directory"
-              className="button-ghost"
-            >
-              Reset
-            </Link>
-          )}
+        <div>
+          <label
+            htmlFor="directory-sort"
+            className="text-xs font-bold uppercase tracking-wider text-slate-600"
+          >
+            Sort results
+          </label>
+          <select
+            id="directory-sort"
+            name="sort"
+            defaultValue={sort}
+            className="mt-2 h-12 w-full border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none hover:border-brand-400 focus:border-brand-700 focus:ring-2 focus:ring-brand-200"
+          >
+            {DIRECTORY_SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 lg:col-span-2 xl:col-span-4">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800">
+            <input
+              type="checkbox"
+              name="imgData"
+              value="available"
+              defaultChecked={imgDataOnly}
+              className="h-4 w-4 accent-blue-700"
+            />
+            Exclude programs without IMG percentage data
+          </label>
+          <div className="flex gap-2">
+            <button type="submit" className="button-primary min-w-28">
+              Filter
+            </button>
+            {(specialty ||
+              location ||
+              visa ||
+              sort !== "default" ||
+              imgDataOnly) && (
+              <Link
+                href="/resources/residency-directory"
+                className="button-ghost"
+              >
+                Reset
+              </Link>
+            )}
+          </div>
         </div>
       </form>
 
@@ -244,6 +325,8 @@ export default async function ResidencyDirectoryPage({
                 specialty,
                 location,
                 visa,
+                sort,
+                imgDataOnly,
               })}
               className="flex h-11 items-center border border-line bg-white px-4 font-semibold text-body"
             >
@@ -254,7 +337,14 @@ export default async function ResidencyDirectoryPage({
             (page) => (
               <Link
                 key={page}
-                href={directoryHref({ page, specialty, location, visa })}
+                href={directoryHref({
+                  page,
+                  specialty,
+                  location,
+                  visa,
+                  sort,
+                  imgDataOnly,
+                })}
                 aria-current={page === requestedPage ? "page" : undefined}
                 className={`flex h-11 min-w-11 items-center justify-center border px-3 font-semibold ${
                   page === requestedPage
@@ -273,6 +363,8 @@ export default async function ResidencyDirectoryPage({
                 specialty,
                 location,
                 visa,
+                sort,
+                imgDataOnly,
               })}
               className="flex h-11 items-center border border-line bg-white px-4 font-semibold text-body"
             >

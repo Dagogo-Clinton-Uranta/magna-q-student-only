@@ -14,7 +14,7 @@ export function ResidencyDirectoryTable({
 }) {
   return (
     <div className="overflow-x-auto border border-slate-200 bg-white">
-      <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+      <table className="w-full min-w-[1120px] border-collapse text-left text-sm">
         <thead className="bg-slate-950 text-xs uppercase tracking-wider text-white">
           <tr>
             <th scope="col" className="w-14 px-4 py-4 text-center font-bold">
@@ -32,6 +32,11 @@ export function ResidencyDirectoryTable({
             <th scope="col" className="px-4 py-4 font-bold">
               Training snapshot
             </th>
+            {!compact && (
+              <th scope="col" className="px-4 py-4 font-bold">
+                IMG representation
+              </th>
+            )}
             <th scope="col" className="px-4 py-4 font-bold">
               Visa information
             </th>
@@ -87,6 +92,27 @@ export function ResidencyDirectoryTable({
                     : ""}
                 </p>
               </td>
+              {!compact && (
+                <td className="px-4 py-4">
+                  {residency.img_resident_percentage !== null ? (
+                    <>
+                      <p className="text-lg font-black text-blue-800">
+                        {formatPercentage(residency.img_resident_percentage)}
+                      </p>
+                      <p className="mt-1 max-w-40 text-xs leading-5 text-slate-500">
+                        FREIDA three-year average
+                        {residency.img_resident_reporting_year
+                          ? ` · ${residency.img_resident_reporting_year}`
+                          : ""}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="max-w-36 text-xs font-semibold leading-5 text-slate-500">
+                      No verified IMG percentage
+                    </p>
+                  )}
+                </td>
+              )}
               <td className="px-4 py-4">
                 <div className="flex flex-wrap gap-1.5">
                   <VisaBadge label="J-1" value={residency.j1_sponsorship} />
@@ -125,6 +151,12 @@ export function ResidencyDirectoryTable({
       </table>
     </div>
   );
+}
+
+function formatPercentage(value: number) {
+  return `${new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 1,
+  }).format(value)}%`;
 }
 
 function ApplicationStatus({ value }: { value: boolean | null }) {

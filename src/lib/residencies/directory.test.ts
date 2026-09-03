@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   directoryHref,
   getDirectoryResearchDate,
+  isDirectorySort,
   isVisaFilter,
   parseFilterOptions,
   RESIDENCIES_PER_PAGE,
@@ -27,6 +28,12 @@ describe("residency directory filters", () => {
     expect(isVisaFilter("untrusted-filter")).toBe(false);
   });
 
+  it("accepts only supported directory sorts", () => {
+    expect(isDirectorySort("default")).toBe(true);
+    expect(isDirectorySort("img-desc")).toBe(true);
+    expect(isDirectorySort("img-asc")).toBe(false);
+  });
+
   it("parses only valid searchable options", () => {
     expect(
       parseFilterOptions({
@@ -49,9 +56,11 @@ describe("residency directory filters", () => {
         specialty: "Internal Medicine",
         location: "AL|Birmingham",
         visa: "j1",
+        sort: "img-desc",
+        imgDataOnly: true,
       }),
     ).toBe(
-      "/resources/residency-directory?specialty=Internal+Medicine&location=AL%7CBirmingham&visa=j1&page=3",
+      "/resources/residency-directory?specialty=Internal+Medicine&location=AL%7CBirmingham&visa=j1&sort=img-desc&imgData=available&page=3",
     );
   });
 });
