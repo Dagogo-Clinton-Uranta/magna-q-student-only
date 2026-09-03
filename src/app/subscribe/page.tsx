@@ -42,17 +42,17 @@ export default async function SubscribePage({
           </p>
           <ul className="mt-8 grid gap-4 sm:grid-cols-3">
             <Feature
-              index="01"
+              index="1"
               title="Practice tests"
               detail="Build and complete USMLE question blocks."
             />
             <Feature
-              index="02"
+              index="2"
               title="Video interviews"
               detail="Record and review residency interview practice."
             />
             <Feature
-              index="03"
+              index="3"
               title="Chat rooms"
               detail="Connect with the Magna-Q student community."
             />

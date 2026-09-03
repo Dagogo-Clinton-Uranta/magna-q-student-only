@@ -23,25 +23,25 @@ export const metadata: Metadata = {
 
 const journey = [
   {
-    step: "01",
+    step: "1",
     title: "Master your licensing exams",
     description:
       "Build focused Step 1, Step 2 CK, and Step 3 practice blocks with clear explanations and progress analytics.",
   },
   {
-    step: "02",
+    step: "2",
     title: "Prepare your application",
     description:
       "Learn the residency timeline, strengthen your story, and organize the milestones that move an application forward.",
   },
   {
-    step: "03",
+    step: "3",
     title: "Practice every interview",
     description:
       "Record realistic answers, review your delivery, and build confidence before speaking with programs.",
   },
   {
-    step: "04",
+    step: "4",
     title: "Navigate the Match",
     description:
       "Understand ranking, communication, and the final steps from completed interviews to Match Day.",

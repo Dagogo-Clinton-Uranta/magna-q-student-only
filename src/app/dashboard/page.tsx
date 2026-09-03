@@ -98,13 +98,13 @@ export default async function DashboardPage() {
                 title={stage.label}
                 description={stage.description}
                 href="/create-test"
-                index={`0${stage.rank}`}
+                index={String(stage.rank)}
               />
               <StudyPath
                 title="Interview practice"
                 description="Interview tips and guided video sessions"
                 href="/interview-practice"
-                index="04"
+                index="4"
               />
             </>
           ) : (
@@ -113,13 +113,13 @@ export default async function DashboardPage() {
                 title="Interview practice"
                 description="Residency tips and guided sessions"
                 href="/interview-practice"
-                index="04"
+                index="4"
               />
               <StudyPath
                 title="Residency & Match"
                 description="Applications, ranking, and Match milestones"
                 href="/guidelines"
-                index="04"
+                index="4"
               />
             </>
           )}

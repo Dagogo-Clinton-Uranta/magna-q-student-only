@@ -39,7 +39,7 @@ export default async function PracticeSessionsPage() {
               className="group rounded-xl border border-slate-200 bg-white p-5 hover:border-emerald-400 hover:shadow-sm"
             >
               <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">
-                Practice area {String(index + 1).padStart(2, "0")}
+                Practice area {index + 1}
               </p>
               <h3 className="mt-2 text-xl font-bold group-hover:text-emerald-900">
                 {area.title}

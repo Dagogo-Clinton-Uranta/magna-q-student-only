@@ -88,7 +88,7 @@ export function InterviewTipsAccordion() {
               >
                 <span>
                   <span className="mr-3 text-blue-700">
-                    {String(index + 1).padStart(2, "0")}
+                    {index + 1}
                   </span>
                   {tip.question}
                 </span>

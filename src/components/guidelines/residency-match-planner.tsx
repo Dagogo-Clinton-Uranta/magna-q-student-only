@@ -257,7 +257,7 @@ export function ResidencyMatchPlanner({
               <div className="grid grid-cols-[8rem_minmax(0,1fr)]">
                 <div className="flex flex-col items-center justify-center bg-slate-950 p-5 text-center text-white">
                   <span className="text-xs font-bold uppercase tracking-[0.18em] text-brand-300">
-                    Step {String(activeIndex! + 1).padStart(2, "0")}
+                    Step {activeIndex! + 1}
                   </span>
                   <span className="mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
                     <svg aria-hidden viewBox="0 0 24 24" className="h-7 w-7">

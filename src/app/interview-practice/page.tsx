@@ -5,7 +5,7 @@ import { requirePaidStudent } from "@/lib/auth/guards";
 
 const modes = [
   {
-    number: "01",
+    number: "1",
     title: "Practice by Competency",
     body: "Choose a practice area, filter the question bank, and deliberately improve how you communicate competency evidence.",
     href: "/interview-practice/sessions",
@@ -13,7 +13,7 @@ const modes = [
     tone: "emerald",
   },
   {
-    number: "02",
+    number: "2",
     title: "Mock Interview",
     body: "Complete an eight-question interview balanced across residency-relevant practice areas, without coaching hints during the session.",
     href: "/interview-practice/mock",
