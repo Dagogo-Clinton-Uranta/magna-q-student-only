@@ -17,6 +17,19 @@ source-published timing text, while standalone or unmatched events retain their
 source-provided institution, specialty, and optional ACGME labels directly on
 the event record.
 
+Program-level IMG evidence is stored in `residency_img_metrics`, with one row
+per program, reporting period, metric definition and source. Do not treat
+`img_resident_share` as an applicant acceptance rate: FREIDA describes its
+resident/fellow characteristics as three-year averages, while program-level
+applicant denominators and IMG acceptance counts are generally not public.
+`scripts/research-residency-img.mts` checks every imported ACGME ID, records both
+available and unavailable results in a dated research snapshot, and generates
+the corresponding forward-only import migration. Re-running it resumes failed
+or incomplete research from the last checkpoint.
+`residency_img_research_status` records an outcome for every directory entry,
+including programs whose public FREIDA page was missing or did not report the
+metric, so missing data is distinguishable from research that was never run.
+
 Questions can belong to one or more subjects but must belong to exactly one
 system (stored in the legacy `categories` tables). The create-test filter treats
 multiple history types as a union, then intersects that pool with the selected

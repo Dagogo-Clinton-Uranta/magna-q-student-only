@@ -7,12 +7,19 @@ import {
 } from "@/app/profile/actions";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
+import { ResidencyImgHistory } from "@/components/resources/residency-img-history";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
   RESIDENCY_DETAIL_COLUMNS,
   type ResidencyDetail,
 } from "@/lib/residencies/directory";
+import {
+  RESIDENCY_IMG_METRIC_COLUMNS,
+  RESIDENCY_IMG_RESEARCH_STATUS_COLUMNS,
+  type ResidencyImgMetric,
+  type ResidencyImgResearchStatus,
+} from "@/lib/residencies/img-metrics";
 import { createClient } from "@/lib/supabase/server";
 
 export type ResidencyDetailScreenProps = {
@@ -45,18 +52,44 @@ export async function ResidencyDetailScreen({
   if (error) throw new Error("Unable to load this residency program.");
   if (!data) notFound();
 
-  const { data: tracking, error: trackingError } = await supabase
-    .from("tracked_residencies")
-    .select("notes,tracked_at")
-    .eq("user_id", profile.id)
-    .eq("residency_id", residencyId)
-    .maybeSingle();
+  const [
+    { data: tracking, error: trackingError },
+    { data: rawImgMetrics, error: imgMetricsError },
+    { data: rawImgResearchStatus, error: imgResearchStatusError },
+  ] = await Promise.all([
+    supabase
+      .from("tracked_residencies")
+      .select("notes,tracked_at")
+      .eq("user_id", profile.id)
+      .eq("residency_id", residencyId)
+      .maybeSingle(),
+    supabase
+      .from("residency_img_metrics")
+      .select(RESIDENCY_IMG_METRIC_COLUMNS)
+      .eq("residency_id", residencyId)
+      .order("reporting_year", { ascending: true }),
+    supabase
+      .from("residency_img_research_status")
+      .select(RESIDENCY_IMG_RESEARCH_STATUS_COLUMNS)
+      .eq("residency_id", residencyId)
+      .maybeSingle(),
+  ]);
   if (trackingError) {
     throw new Error("Unable to load your tracking status for this residency.");
+  }
+  if (imgMetricsError) {
+    throw new Error("Unable to load IMG history for this residency.");
+  }
+  if (imgResearchStatusError) {
+    throw new Error("Unable to load IMG research status for this residency.");
   }
   if (context === "tracked" && !tracking) notFound();
 
   const residency = data as unknown as ResidencyDetail;
+  const imgMetrics = (rawImgMetrics ?? []) as unknown as ResidencyImgMetric[];
+  const imgResearchStatus = rawImgResearchStatus
+    ? (rawImgResearchStatus as unknown as ResidencyImgResearchStatus)
+    : null;
   const mapQuery = [
     residency.program_name,
     residency.city,
@@ -257,6 +290,11 @@ export async function ResidencyDetailScreen({
           />
         </DetailGrid>
       </DetailSection>
+
+      <ResidencyImgHistory
+        metrics={imgMetrics}
+        researchStatus={imgResearchStatus}
+      />
 
       <DetailSection eyebrow="Immigration" title="Listed visa information">
         <p className="mb-5 max-w-3xl leading-7 text-slate-600">

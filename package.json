@@ -19,6 +19,7 @@
     "test:e2e": "playwright test",
     "seed:interview-rubrics": "tsx scripts/seed-interview-rubrics.ts",
     "seed:residency-events": "tsx scripts/import-residency-events.ts",
+    "research:residency-img": "node scripts/research-residency-img.mts",
     "migrate:chat": "tsx scripts/migrate-chat-mongodb.ts",
     "worker:chat": "tsx scripts/chat-moderation-worker.ts",
     "lint": "next lint"
