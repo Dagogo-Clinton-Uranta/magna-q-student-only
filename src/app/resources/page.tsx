@@ -56,11 +56,17 @@ export default async function ResourcesPage() {
       )
       .eq("classification", resourceSection.classification)
       .eq("published", true)
-      .order("published_at", { ascending: false })
-      .limit(2),
+      .order("published_at", { ascending: false }),
   ]);
   if (resourceError) throw new Error("Unable to load resource articles.");
   const resourceArticles = (resourceRows ?? []).map(parseResourceSummary);
+  const resourceArticleGroups = resourceArticles.reduce(
+    (groups, article) => {
+      (groups[article.resource_section] ??= []).push(article);
+      return groups;
+    },
+    {} as Record<string, typeof resourceArticles>,
+  );
   const residencyTeaser = (residencyRows ??
     []) as unknown as ResidencyDirectoryRow[];
   const eventTeaser = (eventRows ??
@@ -155,25 +161,42 @@ export default async function ResourcesPage() {
           id="stage-resource-articles-title"
           className="mt-2 border-b border-slate-300 pb-4 text-2xl font-black"
         >
-          {resourceArticles[0]?.resource_section ?? resourceSection.title}
+          {resourceSection.title}
         </h2>
         <p className="mt-4 max-w-3xl leading-7 text-slate-600">
           {resourceSection.description}
         </p>
-        <div className="mt-5 grid gap-6 md:grid-cols-2">
-          {resourceArticles.map((article) => (
-            <ResourceArticleCard
-              key={article.id}
-              article={article}
-              href={`/resources/library/${resourceSection.slug}/${article.slug}`}
-            />
-          ))}
+        <div className="mt-7 space-y-9">
+          {Object.entries(resourceArticleGroups).map(
+            ([subsection, articles]) => (
+              <section
+                key={subsection}
+                aria-labelledby={`stage-resource-subsection-${subsection.replaceAll(" ", "-").toLowerCase()}`}
+              >
+                <h3
+                  id={`stage-resource-subsection-${subsection.replaceAll(" ", "-").toLowerCase()}`}
+                  className="border-b border-slate-200 pb-3 text-sm font-bold uppercase tracking-widest text-blue-700"
+                >
+                  {subsection}
+                </h3>
+                <div className="mt-5 grid gap-6 md:grid-cols-2">
+                  {articles.slice(0, 2).map((article) => (
+                    <ResourceArticleCard
+                      key={article.id}
+                      article={article}
+                      href={`/resources/library/${resourceSection.slug}/${article.slug}`}
+                    />
+                  ))}
+                </div>
+              </section>
+            ),
+          )}
         </div>
         <Link
           href={`/resources/library/${resourceSection.slug}`}
           className="button-primary mt-6"
         >
-          View more resources from this section →
+          View the full {resourceSection.title.toLowerCase()} library →
         </Link>
       </section>
 
