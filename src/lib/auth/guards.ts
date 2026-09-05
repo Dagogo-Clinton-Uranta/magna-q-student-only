@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DEMO_AUTH_BYPASS_ENABLED } from "@/lib/auth/demo";
 import { PAYMENTS_ENABLED } from "@/config/features";
 import { sanitizeReturnPath } from "@/lib/payments/return-path";
+import { normalizeLocale, type AppLocale } from "@/lib/i18n/config";
 import type { StudentStage } from "@/lib/stages";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,6 +18,7 @@ export type CurrentProfile = {
   studyStage: StudentStage;
   targetExam: "step1" | "step2ck" | "step3";
   monthlyPayment: "paid" | "unpaid";
+  preferredLocale: AppLocale;
 };
 
 export type StudentEntitlement = {
@@ -46,6 +48,7 @@ export const getCurrentProfile = cache(
         // has no corresponding billing row. Keep product demos usable without
         // weakening normal production accounts.
         monthlyPayment: "paid",
+        preferredLocale: "en",
       };
     }
     const user = await getCurrentUser();
@@ -54,7 +57,7 @@ export const getCurrentProfile = cache(
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, username, full_name, role, onboarding_completed, study_stage, target_exam, monthly_payment",
+        "id, username, full_name, role, onboarding_completed, study_stage, target_exam, monthly_payment, preferred_locale",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -68,6 +71,7 @@ export const getCurrentProfile = cache(
       studyStage: (data.study_stage ?? data.target_exam) as StudentStage,
       targetExam: data.target_exam as CurrentProfile["targetExam"],
       monthlyPayment: data.monthly_payment as CurrentProfile["monthlyPayment"],
+      preferredLocale: normalizeLocale(data.preferred_locale),
     };
   },
 );

@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { clientIpFromHeaders } from "@/lib/auth/signup-ip";
 import {
@@ -8,6 +8,11 @@ import {
   reserveSignupSlot,
 } from "@/lib/auth/signup-ip-limit";
 import { logEvent } from "@/lib/logging/logger";
+import {
+  LOCALE_COOKIE_NAME,
+  normalizeLocale,
+  type AppLocale,
+} from "@/lib/i18n/config";
 import { createClient } from "@/lib/supabase/server";
 import {
   authCredentialsSchema,
@@ -41,19 +46,21 @@ function signupProxyPlatform() {
 export async function signInWithPassword(formData: FormData) {
   const credentials = parseCredentials(formData, "login");
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: authData, error } = await supabase.auth.signInWithPassword({
     email: credentials.email,
     password: credentials.password,
   });
   if (error) authError("The email or password is incorrect.", "login");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role,preferred_locale")
+    .eq("id", authData.user.id)
     .maybeSingle();
   if (profile?.role !== "student") {
     await supabase.auth.signOut();
     authError("This portal is available to student accounts only.", "login");
   }
+  await setLocaleCookie(normalizeLocale(profile.preferred_locale));
   redirect("/login");
 }
 
@@ -126,8 +133,8 @@ export async function signUpWithPassword(formData: FormData) {
     });
   const accountWasCreated = Boolean(
     signupResult?.data.user &&
-      (signupResult.data.user.identities === undefined ||
-        signupResult.data.user.identities.length > 0),
+    (signupResult.data.user.identities === undefined ||
+      signupResult.data.user.identities.length > 0),
   );
   if (!signupResult || signupResult.error || !accountWasCreated) {
     if (signupResult) {
@@ -172,6 +179,7 @@ export async function signUpWithPassword(formData: FormData) {
       redirect(
         "/onboarding?error=Your+account+was+created%2C+but+we+could+not+save+your+profile.+Please+complete+it+again.",
       );
+    await setLocaleCookie("en");
     redirect("/dashboard");
   }
   authError(
@@ -183,5 +191,16 @@ export async function signUpWithPassword(formData: FormData) {
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  (await cookies()).delete(LOCALE_COOKIE_NAME);
   redirect("/");
+}
+
+async function setLocaleCookie(locale: AppLocale) {
+  (await cookies()).set(LOCALE_COOKIE_NAME, locale, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
 }

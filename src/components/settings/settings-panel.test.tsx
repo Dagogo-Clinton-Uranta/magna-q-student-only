@@ -41,6 +41,18 @@ describe("SettingsPanel", () => {
     }
   });
 
+  it("places all supported study languages below dark mode", () => {
+    render(<SettingsPanel initialLocale="fr" />);
+
+    const darkMode = screen.getByRole("switch", { name: "Dark mode" });
+    const language = screen.getByRole("combobox", { name: "Study language" });
+    expect(language.compareDocumentPosition(darkMode)).toBe(
+      Node.DOCUMENT_POSITION_PRECEDING,
+    );
+    expect((language as HTMLSelectElement).value).toBe("fr");
+    expect(screen.getAllByRole("option")).toHaveLength(6);
+  });
+
   it("toggles email notifications and explains their availability", () => {
     render(<SettingsPanel />);
     const emailNotifications = screen.getByRole("switch", {

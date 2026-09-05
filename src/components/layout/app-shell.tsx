@@ -4,6 +4,7 @@ import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { InterviewCompletionToasts } from "@/components/interview/interview-completion-toasts";
 import { getCurrentProfile } from "@/lib/auth/guards";
+import { translate, translateWorkspaceTitle } from "@/lib/i18n/messages";
 
 export async function AppShell({
   title,
@@ -15,6 +16,7 @@ export async function AppShell({
   children: React.ReactNode;
 }) {
   const profile = await getCurrentProfile();
+  const locale = profile?.preferredLocale ?? "en";
   return (
     <div className="min-h-screen pb-24 lg:pb-0 lg:pl-72">
       <InterviewCompletionToasts />
@@ -25,7 +27,7 @@ export async function AppShell({
             <BrandMark href="/dashboard" />
           </div>
           <span className="hidden text-sm font-medium text-slate-500 lg:block">
-            Learning workspace
+            {translate(locale, "shell.learningWorkspace")}
           </span>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm font-medium text-muted sm:inline">
@@ -37,9 +39,11 @@ export async function AppShell({
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <p className="eyebrow">Learning workspace</p>
+        <p className="eyebrow">
+          {translate(locale, "shell.learningWorkspace")}
+        </p>
         <h1 className="mt-3 text-3xl font-normal tracking-[0.02em] sm:text-4xl">
-          {title}
+          {translateWorkspaceTitle(locale, title)}
         </h1>
         {children}
       </main>

@@ -1,21 +1,55 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useTransition } from "react";
+import { updatePreferredLocale } from "@/app/settings/actions";
+import { useI18n } from "@/components/i18n/i18n-provider";
+import { LOCALE_OPTIONS, type AppLocale } from "@/lib/i18n/config";
 
 const THEME_STORAGE_KEY = "magna-q-theme";
 
-export function SettingsPanel() {
+export function SettingsPanel({
+  initialLocale = "en",
+}: {
+  initialLocale?: AppLocale;
+}) {
   const [darkMode, setDarkMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
+  const [selectedLocale, setSelectedLocale] = useState(initialLocale);
+  const [languageStatus, setLanguageStatus] = useState<
+    "idle" | "saved" | "error"
+  >("idle");
+  const [isSavingLanguage, startLanguageTransition] = useTransition();
+  const { setLocale, t } = useI18n();
 
   useEffect(() => {
     setDarkMode(document.documentElement.classList.contains("dark"));
-  }, []);
+    setLocale(initialLocale);
+    document.documentElement.lang = initialLocale;
+  }, [initialLocale, setLocale]);
 
   function setDarkModePreference(enabled: boolean) {
     document.documentElement.classList.toggle("dark", enabled);
     window.localStorage.setItem(THEME_STORAGE_KEY, enabled ? "dark" : "light");
     setDarkMode(enabled);
+  }
+
+  function setLanguagePreference(locale: AppLocale) {
+    const previousLocale = selectedLocale;
+    setSelectedLocale(locale);
+    setLocale(locale);
+    document.documentElement.lang = locale;
+    setLanguageStatus("idle");
+    startLanguageTransition(async () => {
+      const result = await updatePreferredLocale(locale);
+      if (!result.ok) {
+        setSelectedLocale(previousLocale);
+        setLocale(previousLocale);
+        document.documentElement.lang = previousLocale;
+        setLanguageStatus("error");
+        return;
+      }
+      setLanguageStatus("saved");
+    });
   }
 
   return (
@@ -24,25 +58,67 @@ export function SettingsPanel() {
       aria-labelledby="preferences-title"
     >
       <div className="border-b border-line p-6 sm:p-8">
-        <p className="eyebrow">Preferences</p>
+        <p className="eyebrow">{t("settings.preferences")}</p>
         <h2 id="preferences-title" className="mt-2 text-2xl">
-          App settings
+          {t("settings.appSettings")}
         </h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Choose how Magna-Q looks and how you would like to hear from us.
+          {t("settings.intro")}
         </p>
       </div>
 
       <div className="divide-y divide-line">
         <SettingRow
-          title="Dark mode"
-          description="Use a darker colour palette across the entire site."
+          title={t("settings.darkMode")}
+          description={t("settings.darkModeDescription")}
           checked={darkMode}
           onCheckedChange={setDarkModePreference}
         />
+        <div className="p-6 sm:p-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <label htmlFor="study-language" className="text-base text-ink">
+                {t("settings.language")}
+              </label>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                {t("settings.languageDescription")}
+              </p>
+            </div>
+            <select
+              id="study-language"
+              value={selectedLocale}
+              disabled={isSavingLanguage}
+              onChange={(event) =>
+                setLanguagePreference(event.currentTarget.value as AppLocale)
+              }
+              className="min-h-11 min-w-48 border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 disabled:cursor-wait disabled:opacity-70"
+            >
+              {LOCALE_OPTIONS.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.nativeName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-muted">
+            {t("settings.contentNotice")}
+          </p>
+          {(isSavingLanguage || languageStatus !== "idle") && (
+            <p
+              role="status"
+              className={`mt-2 text-xs ${languageStatus === "error" ? "text-red-700" : "text-brand-700"}`}
+            >
+              {isSavingLanguage
+                ? t("settings.saving")
+                : languageStatus === "saved"
+                  ? t("settings.saved")
+                  : t("settings.saveError")}
+            </p>
+          )}
+        </div>
         <SettingRow
-          title="Turn on email notifications"
-          description="Receive useful account and study updates by email."
+          title={t("settings.emailNotifications")}
+          description={t("settings.emailNotificationsDescription")}
           checked={emailNotifications}
           onCheckedChange={setEmailNotifications}
         />
@@ -53,7 +129,7 @@ export function SettingsPanel() {
           role="status"
           className="m-6 border border-emerald-400 bg-emerald-100 p-4 text-sm text-emerald-950 sm:mx-8 sm:mb-8"
         >
-          Email notifications are coming in the next patch.
+          {t("settings.emailComingSoon")}
         </div>
       )}
     </section>

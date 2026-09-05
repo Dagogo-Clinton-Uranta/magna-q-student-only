@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BrandMark } from "@/components/brand/brand-mark";
+import { useI18n } from "@/components/i18n/i18n-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import type { StudentStage } from "@/lib/stages";
 
 type IconName =
@@ -39,9 +41,24 @@ const commonEnd: readonly NavigationItem[] = [
 
 const warmedMenus = new Set<string>();
 
+const navigationMessageKeys: Readonly<Record<string, MessageKey>> = {
+  Overview: "nav.overview",
+  "Get Featured": "nav.getFeatured",
+  "Practice tests": "nav.practiceTests",
+  "Interview practice": "nav.interviewPractice",
+  Resources: "nav.resources",
+  Guidelines: "nav.guidelines",
+  "Community blogs": "nav.communityBlogs",
+  "Chat rooms": "nav.chatRooms",
+  Feedback: "nav.feedback",
+  Profile: "nav.profile",
+  Settings: "nav.settings",
+};
+
 export function SidebarNav({ stage }: { stage: StudentStage | null }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
   const items = getStudentNavigationItems(stage);
   const menuKey = `student:${stage ?? "unknown"}`;
 
@@ -75,7 +92,7 @@ export function SidebarNav({ stage }: { stage: StudentStage | null }) {
         <div className="px-2">
           <BrandMark href="/dashboard" />
         </div>
-        <nav className="mt-8 space-y-1" aria-label="Main navigation">
+        <nav className="mt-8 space-y-1" aria-label={t("nav.main")}>
           {items.map((item) => {
             const active = isActive(item.href);
             return (
@@ -91,7 +108,7 @@ export function SidebarNav({ stage }: { stage: StudentStage | null }) {
                 >
                   <NavIcon name={item.icon} />
                 </span>
-                {item.label}
+                {t(navigationMessageKeys[item.label] ?? "nav.overview")}
               </Link>
             );
           })}
@@ -99,7 +116,7 @@ export function SidebarNav({ stage }: { stage: StudentStage | null }) {
       </aside>
       <nav
         className="fixed inset-x-0 bottom-0 z-40 flex overflow-x-auto border-t border-line bg-field/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgb(32_34_36/0.06)] backdrop-blur-xl lg:hidden"
-        aria-label="Mobile navigation"
+        aria-label={t("nav.mobile")}
       >
         {items.map((item) => {
           const active = isActive(item.href);
@@ -116,7 +133,7 @@ export function SidebarNav({ stage }: { stage: StudentStage | null }) {
               >
                 <NavIcon name={item.icon} />
               </span>
-              {item.label}
+              {t(navigationMessageKeys[item.label] ?? "nav.overview")}
             </Link>
           );
         })}
