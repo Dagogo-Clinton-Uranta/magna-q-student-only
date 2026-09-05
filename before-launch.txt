@@ -1,0 +1,8 @@
+
+Before commercial launch, you still need to supply the registered Nigerian company name, 
+CAC registration number, physical address, privacy/legal emails, and verified
+ support contact. You should also implement a visible online cancellation route,
+  explicit interview-processing consent, account deletion/privacy-request handling,
+   and an NDPA-compliant operational retention and breach-response program.
+    A Nigerian technology/privacy lawyer should review the final text before 
+    publication.
