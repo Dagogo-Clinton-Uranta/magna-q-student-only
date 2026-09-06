@@ -378,7 +378,10 @@ export function QuestionPlayer({
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="border border-line bg-white p-5 shadow-card sm:p-7"
             >
-              <p className="whitespace-pre-wrap text-lg leading-8">
+              <p
+                className="whitespace-pre-wrap text-lg leading-8"
+                data-translate-on-demand
+              >
                 <HighlightedText
                   text={question.stem}
                   phrases={question.keyPhrases ?? []}
@@ -444,7 +447,10 @@ export function QuestionPlayer({
                     </div>
                   )}
                   {(aiStatus === "ready" || aiStatus === "error") && (
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-body">
+                    <p
+                      className="mt-2 whitespace-pre-wrap text-sm leading-6 text-body"
+                      data-translate-on-demand
+                    >
                       {aiText}
                     </p>
                   )}
@@ -498,7 +504,7 @@ export function QuestionPlayer({
                           <strong className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100">
                             {String.fromCharCode(65 + index)}
                           </strong>
-                          {option.text}
+                          <span data-translate-on-demand>{option.text}</span>
                         </span>
                         {question.answered &&
                           question.optionStats?.[option.id] !== undefined && (
@@ -536,7 +542,10 @@ export function QuestionPlayer({
                               Why this option is{" "}
                               {correct ? "correct" : "incorrect"}
                             </summary>
-                            <p className="mt-2 leading-6">
+                            <p
+                              className="mt-2 leading-6"
+                              data-translate-on-demand
+                            >
                               {question.rationales[option.id]}
                             </p>
                           </details>
@@ -746,33 +755,46 @@ function Explanation({ question }: { question: Question }) {
           ? "Correct — full explanation"
           : "Incorrect — full explanation"}
       </summary>
-      <p className="mt-3 whitespace-pre-wrap leading-7">
+      <p
+        className="mt-3 whitespace-pre-wrap leading-7"
+        data-translate-on-demand
+      >
         {question.explanation}
       </p>
       {question.educationalObjective && (
         <div className="mt-4">
           <h3 className="font-bold">Educational objective</h3>
-          <p className="mt-1">{question.educationalObjective}</p>
+          <p className="mt-1" data-translate-on-demand>
+            {question.educationalObjective}
+          </p>
         </div>
       )}
       {question.highYieldSummary && (
         <div className="mt-4">
           <h3 className="font-bold">High-yield summary</h3>
-          <p className="mt-1">{question.highYieldSummary}</p>
+          <p className="mt-1" data-translate-on-demand>
+            {question.highYieldSummary}
+          </p>
         </div>
       )}
       {question.usSystemContextNote && (
         <div className="mt-4 rounded-lg bg-blue-50 p-4">
           <h3 className="font-bold text-blue-950">US clinical context</h3>
-          <p className="mt-1 text-blue-950">{question.usSystemContextNote}</p>
+          <p className="mt-1 text-blue-950" data-translate-on-demand>
+            {question.usSystemContextNote}
+          </p>
         </div>
       )}
       {question.glossary && question.glossary.length > 0 && (
         <dl className="mt-4">
           {question.glossary.map((item) => (
             <div key={item.term}>
-              <dt className="font-bold">{item.term}</dt>
-              <dd className="text-slate-700">{item.definition}</dd>
+              <dt className="font-bold" data-translate-on-demand>
+                {item.term}
+              </dt>
+              <dd className="text-slate-700" data-translate-on-demand>
+                {item.definition}
+              </dd>
             </div>
           ))}
         </dl>

@@ -279,10 +279,45 @@ export function SiteTranslator() {
       target.element.setAttribute(target.attribute, output);
     }
 
+    async function requestTranslations(
+      texts: Array<{ id: string; text: string }>,
+    ) {
+      let lastError: unknown;
+      for (let attempt = 0; attempt < 3 && !stopped; attempt += 1) {
+        try {
+          const response = await fetch("/api/i18n/translate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ locale, texts }),
+            signal: controller.signal,
+          });
+          if (!response.ok)
+            throw new Error(`Translation failed (${response.status})`);
+          const result = (await response.json()) as TranslationResponse;
+          const translations = result.translations ?? [];
+          if (translations.length !== texts.length)
+            throw new Error("Translation returned an incomplete response");
+          return new Map(translations.map((item) => [item.id, item.text]));
+        } catch (error) {
+          lastError = error;
+          if (error instanceof DOMException && error.name === "AbortError")
+            throw error;
+          if (attempt < 2)
+            await new Promise((resolve) =>
+              setTimeout(resolve, 750 * (attempt + 1)),
+            );
+        }
+      }
+      throw lastError instanceof Error
+        ? lastError
+        : new Error("Translation request failed");
+    }
+
     async function flush() {
       if (flushing || stopped || !pending.size) return;
       flushing = true;
       document.documentElement.dataset.translationState = "loading";
+      let hadFailures = false;
 
       try {
         while (pending.size && !stopped) {
@@ -294,21 +329,10 @@ export function SiteTranslator() {
             pending.delete(source);
             const translatedParts: string[] = [];
             for (const part of splitForTranslation(source)) {
-              const response = await fetch("/api/i18n/translate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  locale,
-                  texts: [{ id: "part", text: part }],
-                }),
-                signal: controller.signal,
-              });
-              if (!response.ok)
-                throw new Error(`Translation failed (${response.status})`);
-              const result = (await response.json()) as TranslationResponse;
-              const translation = result.translations?.find(
-                (item) => item.id === "part",
-              )?.text;
+              const result = await requestTranslations([
+                { id: "part", text: part },
+              ]);
+              const translation = result.get("part");
               if (typeof translation !== "string")
                 throw new Error("Translation returned an invalid response");
               translatedParts.push(translation);
@@ -338,30 +362,43 @@ export function SiteTranslator() {
             characters += text.length;
           }
 
-          const response = await fetch("/api/i18n/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              locale,
-              texts: batch.map(({ id, text }) => ({ id, text })),
-            }),
-            signal: controller.signal,
-          });
-          if (!response.ok)
-            throw new Error(`Translation failed (${response.status})`);
-          const result = (await response.json()) as TranslationResponse;
-          const byId = new Map(
-            (result.translations ?? []).map((item) => [item.id, item.text]),
-          );
+          let byId: Map<string, string>;
+          try {
+            byId = await requestTranslations(
+              batch.map(({ id, text }) => ({ id, text })),
+            );
+          } catch (batchError) {
+            byId = new Map<string, string>();
+            for (const item of batch) {
+              try {
+                const single = await requestTranslations([
+                  { id: item.id, text: item.text },
+                ]);
+                const translation = single.get(item.id);
+                if (translation !== undefined) byId.set(item.id, translation);
+              } catch (itemError) {
+                hadFailures = true;
+                console.error(
+                  "A static interface string could not be translated.",
+                  itemError,
+                );
+              }
+            }
+            if (!byId.size) console.error(batchError);
+          }
 
           for (const item of batch) {
-            const translation = byId.get(item.id) ?? item.text;
+            const translation = byId.get(item.id);
+            if (translation === undefined) continue;
             rememberTranslation(`${locale}\u0000${item.text}`, translation);
             item.targets.forEach((target) => applyTarget(target, translation));
           }
         }
-        if (!stopped)
-          document.documentElement.dataset.translationState = "complete";
+        if (!stopped) {
+          document.documentElement.dataset.translationState = hadFailures
+            ? "error"
+            : "complete";
+        }
       } catch (error) {
         if (
           !stopped &&

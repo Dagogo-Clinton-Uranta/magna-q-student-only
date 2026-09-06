@@ -97,19 +97,25 @@ export function OnDemandTranslation({
 
     try {
       const targets = new Map<string, Text[]>();
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      let node = walker.nextNode();
-      while (node) {
-        const textNode = node as Text;
-        const source = originals.current.get(textNode) ?? textNode.data;
-        originals.current.set(textNode, source);
-        const text = source.trim();
-        if (/\p{L}/u.test(text)) {
-          const group = targets.get(text) ?? [];
-          group.push(textNode);
-          targets.set(text, group);
+      const dynamicRoots = root.querySelectorAll("[data-translate-on-demand]");
+      for (const dynamicRoot of dynamicRoots) {
+        const walker = document.createTreeWalker(
+          dynamicRoot,
+          NodeFilter.SHOW_TEXT,
+        );
+        let node = walker.nextNode();
+        while (node) {
+          const textNode = node as Text;
+          const source = originals.current.get(textNode) ?? textNode.data;
+          originals.current.set(textNode, source);
+          const text = source.trim();
+          if (/\p{L}/u.test(text)) {
+            const group = targets.get(text) ?? [];
+            group.push(textNode);
+            targets.set(text, group);
+          }
+          node = walker.nextNode();
         }
-        node = walker.nextNode();
       }
 
       const cache = readCache();
@@ -182,9 +188,7 @@ export function OnDemandTranslation({
           )}
         </div>
       )}
-      <div ref={contentRef} data-translate-on-demand>
-        {children}
-      </div>
+      <div ref={contentRef}>{children}</div>
     </>
   );
 }

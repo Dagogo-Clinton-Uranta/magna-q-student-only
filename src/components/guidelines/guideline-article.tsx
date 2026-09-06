@@ -26,9 +26,14 @@ export function GuidelineArticle({
   return (
     <OnDemandTranslation contentLabel="article">
       <article className="mx-auto mt-5 max-w-5xl border border-brand-200 bg-white p-5 sm:p-8">
-        <p className="eyebrow">{article.eyebrow}</p>
+        <p className="eyebrow" data-translate-on-demand>
+          {article.eyebrow}
+        </p>
         <div className="mt-3 flex items-start justify-between gap-3 sm:gap-6">
-          <h1 className="min-w-0 flex-1 text-2xl font-normal tracking-[0.02em] text-ink sm:text-3xl">
+          <h1
+            className="min-w-0 flex-1 text-2xl font-normal tracking-[0.02em] text-ink sm:text-3xl"
+            data-translate-on-demand
+          >
             {article.title}
           </h1>
           {documentUrl && (
@@ -51,7 +56,9 @@ export function GuidelineArticle({
 
         <div className="mt-5 max-w-4xl space-y-4 leading-7 text-muted">
           {article.preamble.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
+            <p key={paragraph} data-translate-on-demand>
+              {paragraph}
+            </p>
           ))}
         </div>
 
@@ -67,7 +74,8 @@ export function GuidelineArticle({
                   href={`#section-${section.number}`}
                   className="font-semibold text-brand-800 underline-offset-2 hover:underline"
                 >
-                  {section.number}. {section.title}
+                  {section.number}.{" "}
+                  <span data-translate-on-demand>{section.title}</span>
                 </a>
               </li>
             ))}
@@ -92,7 +100,9 @@ export function GuidelineArticle({
           <p className="eyebrow">Final takeaway</p>
           <div className="mt-3 max-w-4xl space-y-4 leading-7 text-body">
             {article.conclusion.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
+              <p key={paragraph} data-translate-on-demand>
+                {paragraph}
+              </p>
             ))}
           </div>
         </section>
@@ -115,7 +125,7 @@ export function GuidelineArticle({
                     rel="noreferrer"
                     className="font-bold text-brand-800 underline underline-offset-2"
                   >
-                    {source.label} ↗
+                    <span data-translate-on-demand>{source.label}</span> ↗
                   </a>
                 </li>
               ))}
@@ -172,9 +182,14 @@ function GuidelineSectionCard({
           {section.number}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-bold text-ink">{section.title}</h2>
+          <h2 className="text-lg font-bold text-ink" data-translate-on-demand>
+            {section.title}
+          </h2>
           {section.introduction && (
-            <p className="mt-3 text-sm leading-6 text-body">
+            <p
+              className="mt-3 text-sm leading-6 text-body"
+              data-translate-on-demand
+            >
               {section.introduction}
             </p>
           )}
@@ -198,7 +213,7 @@ function GuidelineSectionCard({
                       •
                     </span>
                   )}
-                  <span>{point}</span>
+                  <span data-translate-on-demand>{point}</span>
                 </li>
               );
             })}
@@ -213,7 +228,7 @@ function GuidelineSectionCard({
                   rel="noreferrer"
                   className="text-sm font-bold text-brand-800 underline underline-offset-2"
                 >
-                  {link.label} ↗
+                  <span data-translate-on-demand>{link.label}</span> ↗
                 </a>
               ))}
             </div>
@@ -241,7 +256,10 @@ function GuidelineSectionCard({
                 />
               )}
               {asset.caption && (
-                <figcaption className="mt-2 text-xs leading-5 text-muted">
+                <figcaption
+                  className="mt-2 text-xs leading-5 text-muted"
+                  data-translate-on-demand
+                >
                   {asset.caption}
                 </figcaption>
               )}

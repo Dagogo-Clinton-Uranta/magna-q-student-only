@@ -62,7 +62,7 @@ const en: MessagePack = {
   "settings.languageDescription":
     "Choose the language used throughout Magna-Q.",
   "settings.contentNotice":
-    "Page content, buttons, guidelines, resources, and content loaded later are translated automatically.",
+    "Interface text is translated automatically. Articles and test questions are translated when you request them.",
   "settings.saving": "Saving language…",
   "settings.saved": "Language preference saved.",
   "settings.saveError": "We could not save your language. Please try again.",
@@ -101,7 +101,7 @@ const es: MessagePack = {
   "settings.languageDescription":
     "Elige el idioma que se usará en todo Magna-Q.",
   "settings.contentNotice":
-    "El contenido de las páginas, los botones, las guías, los recursos y el contenido cargado posteriormente se traducen automáticamente.",
+    "El texto de la interfaz se traduce automáticamente. Los artículos y las preguntas de examen se traducen cuando lo solicitas.",
   "settings.saving": "Guardando idioma…",
   "settings.saved": "Preferencia de idioma guardada.",
   "settings.saveError": "No pudimos guardar el idioma. Inténtalo de nuevo.",
@@ -140,7 +140,7 @@ const pt: MessagePack = {
   "settings.languageDescription":
     "Escolha o idioma utilizado em todo o Magna-Q.",
   "settings.contentNotice":
-    "O conteúdo das páginas, os botões, as diretrizes, os recursos e o conteúdo carregado posteriormente são traduzidos automaticamente.",
+    "O texto da interface é traduzido automaticamente. Os artigos e as perguntas de teste são traduzidos quando solicitado.",
   "settings.saving": "A guardar idioma…",
   "settings.saved": "Preferência de idioma guardada.",
   "settings.saveError": "Não foi possível guardar o idioma. Tente novamente.",
@@ -179,7 +179,7 @@ const fr: MessagePack = {
   "settings.languageDescription":
     "Choisissez la langue utilisée dans l’ensemble de Magna-Q.",
   "settings.contentNotice":
-    "Le contenu des pages, les boutons, les guides, les ressources et le contenu chargé ultérieurement sont traduits automatiquement.",
+    "Le texte de l’interface est traduit automatiquement. Les articles et les questions de test sont traduits à votre demande.",
   "settings.saving": "Enregistrement de la langue…",
   "settings.saved": "Préférence linguistique enregistrée.",
   "settings.saveError":
@@ -218,7 +218,7 @@ const hi: MessagePack = {
   "settings.languageDescription":
     "पूरे Magna-Q में उपयोग की जाने वाली भाषा चुनें।",
   "settings.contentNotice":
-    "पेज की सामग्री, बटन, दिशानिर्देश, संसाधन और बाद में लोड होने वाली सामग्री अपने आप अनुवादित होती है।",
+    "इंटरफ़ेस का टेक्स्ट अपने आप अनुवादित होता है। लेख और परीक्षा के प्रश्न आपके अनुरोध पर अनुवादित होते हैं।",
   "settings.saving": "भाषा सहेजी जा रही है…",
   "settings.saved": "भाषा की प्राथमिकता सहेज दी गई है।",
   "settings.saveError": "भाषा सहेजी नहीं जा सकी। कृपया फिर प्रयास करें।",
@@ -254,7 +254,7 @@ const bn: MessagePack = {
   "settings.language": "অধ্যয়নের ভাষা",
   "settings.languageDescription": "Magna-Q জুড়ে ব্যবহৃত ভাষা বেছে নিন।",
   "settings.contentNotice":
-    "পেজের কনটেন্ট, বোতাম, নির্দেশিকা, রিসোর্স এবং পরে লোড হওয়া কনটেন্ট স্বয়ংক্রিয়ভাবে অনুবাদ করা হয়।",
+    "ইন্টারফেসের লেখা স্বয়ংক্রিয়ভাবে অনুবাদ হয়। নিবন্ধ ও পরীক্ষার প্রশ্ন আপনার অনুরোধে অনুবাদ করা হয়।",
   "settings.saving": "ভাষা সংরক্ষণ করা হচ্ছে…",
   "settings.saved": "ভাষার পছন্দ সংরক্ষণ করা হয়েছে।",
   "settings.saveError": "ভাষা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
