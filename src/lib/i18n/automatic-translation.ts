@@ -10,6 +10,7 @@ type LibreTranslateResponse = {
 };
 
 const MAX_CACHE_ENTRIES = 10_000;
+const PROVIDER_TIMEOUT_MS = 55_000;
 const translationCache = new Map<string, string>();
 
 function cacheKey(locale: AppLocale, text: string) {
@@ -61,12 +62,18 @@ export async function translateAutomatically(
             ? { api_key: env.LIBRETRANSLATE_API_KEY }
             : {}),
         }),
-        signal: AbortSignal.timeout(45_000),
+        signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
       },
     );
 
-    if (!response.ok)
-      throw new Error(`TRANSLATION_PROVIDER_${response.status}`);
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => ""))
+        .replace(/\s+/g, " ")
+        .slice(0, 500);
+      throw new Error(
+        `TRANSLATION_PROVIDER_${response.status}${detail ? `: ${detail}` : ""}`,
+      );
+    }
     const payload = (await response.json()) as LibreTranslateResponse;
     const outputs = Array.isArray(payload.translatedText)
       ? payload.translatedText

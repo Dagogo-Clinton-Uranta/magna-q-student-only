@@ -4,6 +4,9 @@ import { SUPPORTED_LOCALES } from "@/lib/i18n/config";
 import { translateAutomatically } from "@/lib/i18n/automatic-translation";
 
 export const runtime = "nodejs";
+// A self-hosted translation model can take longer than a default serverless
+// invocation, particularly immediately after a Railway deployment.
+export const maxDuration = 60;
 
 const requestSchema = z.object({
   locale: z.enum(SUPPORTED_LOCALES),
@@ -20,7 +23,9 @@ const requestSchema = z.object({
 
 const requestWindows = new Map<string, { startedAt: number; count: number }>();
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS_PER_WINDOW = 60;
+// Smaller client batches make more requests for long guides and resources.
+// This remains bounded while allowing a complete page translation to finish.
+const MAX_REQUESTS_PER_WINDOW = 360;
 
 function isAllowed(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0];
@@ -79,6 +84,7 @@ export async function POST(request: Request) {
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
+    console.error("LibreTranslate request failed.", error);
     return NextResponse.json(
       {
         error: "Automatic translation is temporarily unavailable.",

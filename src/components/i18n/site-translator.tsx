@@ -42,9 +42,14 @@ const EXCLUDED_SELECTOR = [
   "textarea",
   '[contenteditable="true"]',
 ].join(",");
-const MAX_BATCH_ITEMS = 50;
-const MAX_BATCH_CHARACTERS = 16_000;
+// Keep requests deliberately small for a modest self-hosted translation host.
+// Each completed batch is applied immediately, so the page progressively
+// translates instead of waiting for a large database-backed page to finish.
+const MAX_BATCH_ITEMS = 4;
+const MAX_BATCH_CHARACTERS = 600;
 const FLUSH_DELAY_MS = 60;
+const BROWSER_CACHE_KEY = "magna-q.runtime-translations.v1";
+const MAX_BROWSER_CACHE_ENTRIES = 1_500;
 
 function hasWords(value: string) {
   return /\p{L}/u.test(value);
@@ -59,6 +64,23 @@ function withOriginalWhitespace(source: string, translated: string) {
   if (start < 0) return source;
   const end = source.search(/\s*$/);
   return `${source.slice(0, start)}${translated}${source.slice(end)}`;
+}
+
+function splitForTranslation(value: string) {
+  if (value.length <= MAX_BATCH_CHARACTERS) return [value];
+  const chunks: string[] = [];
+  let offset = 0;
+  while (offset < value.length) {
+    let end = Math.min(offset + MAX_BATCH_CHARACTERS, value.length);
+    if (end < value.length) {
+      const whitespace = value.lastIndexOf(" ", end);
+      if (whitespace > offset + Math.floor(MAX_BATCH_CHARACTERS / 2))
+        end = whitespace + 1;
+    }
+    chunks.push(value.slice(offset, end));
+    offset = end;
+  }
+  return chunks;
 }
 
 function excluded(element: Element | null) {
@@ -85,6 +107,46 @@ export function SiteTranslator() {
     let flushing = false;
     const controller = new AbortController();
     const pending = new Map<string, TranslationTarget[]>();
+    let cacheWriteTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function persistCache() {
+      cacheWriteTimer = null;
+      try {
+        const entries = Array.from(cache.current.entries()).slice(
+          -MAX_BROWSER_CACHE_ENTRIES,
+        );
+        window.localStorage.setItem(BROWSER_CACHE_KEY, JSON.stringify(entries));
+      } catch {
+        // Translation remains functional when browser storage is unavailable.
+      }
+    }
+
+    function rememberTranslation(key: string, value: string) {
+      cache.current.delete(key);
+      cache.current.set(key, value);
+      if (cache.current.size > MAX_BROWSER_CACHE_ENTRIES)
+        cache.current.delete(cache.current.keys().next().value!);
+      if (!cacheWriteTimer)
+        cacheWriteTimer = setTimeout(persistCache, 250);
+    }
+
+    try {
+      const stored = JSON.parse(
+        window.localStorage.getItem(BROWSER_CACHE_KEY) ?? "[]",
+      ) as unknown;
+      if (Array.isArray(stored)) {
+        for (const entry of stored) {
+          if (
+            Array.isArray(entry) &&
+            typeof entry[0] === "string" &&
+            typeof entry[1] === "string"
+          )
+            cache.current.set(entry[0], entry[1]);
+        }
+      }
+    } catch {
+      // Ignore a malformed or unavailable local cache.
+    }
 
     document.documentElement.lang = locale;
     document.documentElement.dataset.translationState = "loading";
@@ -224,6 +286,39 @@ export function SiteTranslator() {
 
       try {
         while (pending.size && !stopped) {
+          const oversized = Array.from(pending.entries()).find(
+            ([text]) => text.length > MAX_BATCH_CHARACTERS,
+          );
+          if (oversized) {
+            const [source, targets] = oversized;
+            pending.delete(source);
+            const translatedParts: string[] = [];
+            for (const part of splitForTranslation(source)) {
+              const response = await fetch("/api/i18n/translate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  locale,
+                  texts: [{ id: "part", text: part }],
+                }),
+                signal: controller.signal,
+              });
+              if (!response.ok)
+                throw new Error(`Translation failed (${response.status})`);
+              const result = (await response.json()) as TranslationResponse;
+              const translation = result.translations?.find(
+                (item) => item.id === "part",
+              )?.text;
+              if (typeof translation !== "string")
+                throw new Error("Translation returned an invalid response");
+              translatedParts.push(translation);
+            }
+            const translation = translatedParts.join("");
+            rememberTranslation(`${locale}\u0000${source}`, translation);
+            targets.forEach((target) => applyTarget(target, translation));
+            continue;
+          }
+
           const batch: Array<{
             id: string;
             text: string;
@@ -261,7 +356,7 @@ export function SiteTranslator() {
 
           for (const item of batch) {
             const translation = byId.get(item.id) ?? item.text;
-            cache.current.set(`${locale}\u0000${item.text}`, translation);
+            rememberTranslation(`${locale}\u0000${item.text}`, translation);
             item.targets.forEach((target) => applyTarget(target, translation));
           }
         }
@@ -310,6 +405,8 @@ export function SiteTranslator() {
     return () => {
       stopped = true;
       if (flushTimer) clearTimeout(flushTimer);
+      if (cacheWriteTimer) clearTimeout(cacheWriteTimer);
+      persistCache();
       controller.abort();
       observer.disconnect();
     };
