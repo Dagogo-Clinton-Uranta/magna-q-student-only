@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { I18nProvider } from "@/components/i18n/i18n-provider";
+import { SiteTranslator } from "@/components/i18n/site-translator";
 import { ConditionalSiteFooter } from "@/components/layout/site-footer";
 import { ContentProtection } from "@/components/security/content-protection";
 import { ThemeRouteController } from "@/components/settings/theme-route-controller";
@@ -35,6 +36,7 @@ export default async function RootLayout({
           <ThemeRouteController />
           <ContentProtection>{children}</ContentProtection>
           <ConditionalSiteFooter />
+          <SiteTranslator />
         </I18nProvider>
       </body>
     </html>

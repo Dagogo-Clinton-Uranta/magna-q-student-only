@@ -60,9 +60,9 @@ const en: MessagePack = {
     "Use a darker colour palette across the entire site.",
   "settings.language": "Study language",
   "settings.languageDescription":
-    "Choose the language used for navigation and supported learning content.",
+    "Choose the language used throughout Magna-Q.",
   "settings.contentNotice":
-    "Medical questions and articles remain in their original language until a reviewed translation is available.",
+    "Page content, buttons, guidelines, resources, and content loaded later are translated automatically.",
   "settings.saving": "Saving language…",
   "settings.saved": "Language preference saved.",
   "settings.saveError": "We could not save your language. Please try again.",
@@ -99,9 +99,9 @@ const es: MessagePack = {
     "Usa una paleta de colores más oscura en todo el sitio.",
   "settings.language": "Idioma de estudio",
   "settings.languageDescription":
-    "Elige el idioma de la navegación y del contenido educativo compatible.",
+    "Elige el idioma que se usará en todo Magna-Q.",
   "settings.contentNotice":
-    "Las preguntas y los artículos médicos permanecen en su idioma original hasta que haya una traducción revisada.",
+    "El contenido de las páginas, los botones, las guías, los recursos y el contenido cargado posteriormente se traducen automáticamente.",
   "settings.saving": "Guardando idioma…",
   "settings.saved": "Preferencia de idioma guardada.",
   "settings.saveError": "No pudimos guardar el idioma. Inténtalo de nuevo.",
@@ -138,9 +138,9 @@ const pt: MessagePack = {
     "Use uma paleta de cores mais escura em todo o site.",
   "settings.language": "Idioma de estudo",
   "settings.languageDescription":
-    "Escolha o idioma da navegação e do conteúdo educativo compatível.",
+    "Escolha o idioma utilizado em todo o Magna-Q.",
   "settings.contentNotice":
-    "As questões e os artigos médicos permanecem no idioma original até existir uma tradução revista.",
+    "O conteúdo das páginas, os botões, as diretrizes, os recursos e o conteúdo carregado posteriormente são traduzidos automaticamente.",
   "settings.saving": "A guardar idioma…",
   "settings.saved": "Preferência de idioma guardada.",
   "settings.saveError": "Não foi possível guardar o idioma. Tente novamente.",
@@ -177,9 +177,9 @@ const fr: MessagePack = {
     "Utilisez une palette de couleurs plus sombre sur l’ensemble du site.",
   "settings.language": "Langue d’étude",
   "settings.languageDescription":
-    "Choisissez la langue de navigation et des contenus pédagogiques pris en charge.",
+    "Choisissez la langue utilisée dans l’ensemble de Magna-Q.",
   "settings.contentNotice":
-    "Les questions et articles médicaux restent dans leur langue d’origine jusqu’à ce qu’une traduction révisée soit disponible.",
+    "Le contenu des pages, les boutons, les guides, les ressources et le contenu chargé ultérieurement sont traduits automatiquement.",
   "settings.saving": "Enregistrement de la langue…",
   "settings.saved": "Préférence linguistique enregistrée.",
   "settings.saveError":
@@ -216,9 +216,9 @@ const hi: MessagePack = {
   "settings.darkModeDescription": "पूरी साइट पर गहरे रंगों का उपयोग करें।",
   "settings.language": "अध्ययन की भाषा",
   "settings.languageDescription":
-    "नेविगेशन और समर्थित अध्ययन सामग्री की भाषा चुनें।",
+    "पूरे Magna-Q में उपयोग की जाने वाली भाषा चुनें।",
   "settings.contentNotice":
-    "चिकित्सा प्रश्न और लेख तब तक अपनी मूल भाषा में रहेंगे, जब तक समीक्षा किया हुआ अनुवाद उपलब्ध न हो।",
+    "पेज की सामग्री, बटन, दिशानिर्देश, संसाधन और बाद में लोड होने वाली सामग्री अपने आप अनुवादित होती है।",
   "settings.saving": "भाषा सहेजी जा रही है…",
   "settings.saved": "भाषा की प्राथमिकता सहेज दी गई है।",
   "settings.saveError": "भाषा सहेजी नहीं जा सकी। कृपया फिर प्रयास करें।",
@@ -252,10 +252,9 @@ const bn: MessagePack = {
   "settings.darkMode": "ডার্ক মোড",
   "settings.darkModeDescription": "পুরো সাইটে গাঢ় রঙের প্যালেট ব্যবহার করুন।",
   "settings.language": "অধ্যয়নের ভাষা",
-  "settings.languageDescription":
-    "নেভিগেশন এবং সমর্থিত শিক্ষামূলক কনটেন্টের ভাষা বেছে নিন।",
+  "settings.languageDescription": "Magna-Q জুড়ে ব্যবহৃত ভাষা বেছে নিন।",
   "settings.contentNotice":
-    "পর্যালোচিত অনুবাদ না পাওয়া পর্যন্ত চিকিৎসাবিষয়ক প্রশ্ন ও নিবন্ধ তাদের মূল ভাষায় থাকবে।",
+    "পেজের কনটেন্ট, বোতাম, নির্দেশিকা, রিসোর্স এবং পরে লোড হওয়া কনটেন্ট স্বয়ংক্রিয়ভাবে অনুবাদ করা হয়।",
   "settings.saving": "ভাষা সংরক্ষণ করা হচ্ছে…",
   "settings.saved": "ভাষার পছন্দ সংরক্ষণ করা হয়েছে।",
   "settings.saveError": "ভাষা সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",

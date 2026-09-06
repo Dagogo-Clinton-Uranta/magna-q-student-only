@@ -4,8 +4,11 @@
 2. Configure Auth site and callback URLs from `docs/authentication.md`.
 3. Set browser-safe and server-only environment variables from `.env.example` in Vercel.
 4. Deploy the Next.js application with Node.js 24.
-5. Confirm the separate administration module points to the same shared data stores so pending student actions can be reviewed.
-6. Run health, authentication, RLS, block-generation and answer smoke tests after deployment.
+5. Deploy the persistent LibreTranslate companion described in
+   [offline site translation](translation.md), then set its server-only URL and
+   optional API key in Vercel.
+6. Confirm the separate administration module points to the same shared data stores so pending student actions can be reviewed.
+7. Run health, authentication, RLS, block-generation and answer smoke tests after deployment.
 
 Before enabling paid features, follow [student subscriptions](payments.md): apply the billing migration, configure the fixed Stripe Price and signed webhook, and run the payment replay/paywall smoke checks.
 

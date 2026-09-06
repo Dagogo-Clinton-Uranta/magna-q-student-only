@@ -86,6 +86,7 @@ export function SettingsPanel({
             </div>
             <select
               id="study-language"
+              data-no-translate
               value={selectedLocale}
               disabled={isSavingLanguage}
               onChange={(event) =>

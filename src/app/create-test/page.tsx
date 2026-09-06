@@ -2,6 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { BlockBuilder } from "@/components/study/block-builder";
+import {
+  Step1BlockBuilder,
+  type Step1BuilderMap,
+  Step2BlockBuilder,
+  type Step2BuilderMap,
+} from "@/components/study/step2-block-builder";
 import { requirePaidStudent } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { getStageDefinition } from "@/lib/stages";
@@ -39,6 +45,94 @@ export default async function CreateTestPage({
           Your target examination is not available. Update your profile or
           contact an administrator.
         </p>
+      </AppShell>
+    );
+  }
+
+  if (examCode === "step2ck") {
+    const { data: selectionMap, error: selectionMapError } = await supabase.rpc(
+      "student_step2_test_builder_map",
+      { selected_exam_id: exam.id },
+    );
+
+    if (selectionMapError || !selectionMap) {
+      return (
+        <AppShell title="Create a new test" name={profile.fullName}>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-3xl text-slate-700">
+              Build a practice test for {exam.name}.
+            </p>
+            <Link href="/dashboard" className="font-semibold text-blue-800">
+              Back to dashboard
+            </Link>
+          </div>
+          <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+            The Step 2 CK selection map is not available yet. Apply the Step 2
+            student-builder database migration and refresh this page.
+          </p>
+        </AppShell>
+      );
+    }
+
+    return (
+      <AppShell title="Create a new test" name={profile.fullName}>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-3xl text-slate-700">
+            Build a {exam.name} block by organ system, clinical science,
+            patient-care task, topic, nutrition focus, and difficulty.
+          </p>
+          <Link href="/dashboard" className="font-semibold text-blue-800">
+            Back to dashboard
+          </Link>
+        </div>
+        <Step2BlockBuilder
+          exam={exam}
+          selectionMap={selectionMap as Step2BuilderMap}
+        />
+      </AppShell>
+    );
+  }
+
+  if (examCode === "step1") {
+    const { data: selectionMap, error: selectionMapError } = await supabase.rpc(
+      "student_step1_test_builder_map",
+      { selected_exam_id: exam.id },
+    );
+
+    if (selectionMapError || !selectionMap) {
+      return (
+        <AppShell title="Create a new test" name={profile.fullName}>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-3xl text-slate-700">
+              Build a practice test for {exam.name}.
+            </p>
+            <Link href="/dashboard" className="font-semibold text-blue-800">
+              Back to dashboard
+            </Link>
+          </div>
+          <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+            The Step 1 selection map is not available yet. Apply the Step 1
+            student-builder database migration and refresh this page.
+          </p>
+        </AppShell>
+      );
+    }
+
+    return (
+      <AppShell title="Create a new test" name={profile.fullName}>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-3xl text-slate-700">
+            Build a {exam.name} block by organ system, science discipline, task
+            or competency, topic, and difficulty.
+          </p>
+          <Link href="/dashboard" className="font-semibold text-blue-800">
+            Back to dashboard
+          </Link>
+        </div>
+        <Step1BlockBuilder
+          exam={exam}
+          selectionMap={selectionMap as Step1BuilderMap}
+        />
       </AppShell>
     );
   }
