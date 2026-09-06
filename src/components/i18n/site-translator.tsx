@@ -32,6 +32,7 @@ const TRANSLATED_ATTRIBUTES = [
 ] as const;
 const EXCLUDED_SELECTOR = [
   "[data-no-translate]",
+  "[data-translate-on-demand]",
   "script",
   "style",
   "noscript",
@@ -126,8 +127,7 @@ export function SiteTranslator() {
       cache.current.set(key, value);
       if (cache.current.size > MAX_BROWSER_CACHE_ENTRIES)
         cache.current.delete(cache.current.keys().next().value!);
-      if (!cacheWriteTimer)
-        cacheWriteTimer = setTimeout(persistCache, 250);
+      if (!cacheWriteTimer) cacheWriteTimer = setTimeout(persistCache, 250);
     }
 
     try {
