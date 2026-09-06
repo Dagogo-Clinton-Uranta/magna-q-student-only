@@ -169,9 +169,12 @@ function ExamBlueprintBlockBuilder({
         };
         if (!response.ok || typeof result.count !== "number")
           throw new Error(result.error);
-        setEligible(result.count);
+        // Capture the narrowed value before entering the state updater. TypeScript
+        // does not retain a property narrowing inside that callback.
+        const eligibleCount = result.count;
+        setEligible(eligibleCount);
         setRequested((current) =>
-          result.count === 0 ? 1 : Math.min(current, result.count, 20),
+          eligibleCount === 0 ? 1 : Math.min(current, eligibleCount, 20),
         );
         setCountState("ready");
       } catch (error) {
