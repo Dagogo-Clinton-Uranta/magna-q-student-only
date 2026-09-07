@@ -29,7 +29,6 @@ const TRANSLATED_ATTRIBUTES = [
 ] as const;
 const EXCLUDED_SELECTOR = [
   "[data-no-translate]",
-  "[data-translate-on-demand]",
   "script",
   "style",
   "noscript",
@@ -93,8 +92,8 @@ function excluded(element: Element | null) {
 }
 
 /**
- * Applies a bundled offline catalog to stable interface copy. Database-backed
- * articles and questions use the separate on-demand translation boundary.
+ * Applies the bundled offline catalog to all rendered page copy, including
+ * database-backed articles, resources, guidelines, and questions.
  */
 export function SiteTranslator() {
   const { locale } = useI18n();

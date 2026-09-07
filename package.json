@@ -22,11 +22,6 @@
     "research:residency-img": "node scripts/research-residency-img.mts",
     "migrate:chat": "tsx scripts/migrate-chat-mongodb.ts",
     "worker:chat": "tsx scripts/chat-moderation-worker.ts",
-    "translation:start": "docker compose -f docker-compose.translation.yml up -d",
-    "translation:stop": "docker compose -f docker-compose.translation.yml down",
-    "translation:logs": "docker compose -f docker-compose.translation.yml logs -f libretranslate",
-    "translation:install-local": "bash scripts/install-libretranslate-local.sh",
-    "translation:start-local": "bash scripts/start-libretranslate-local.sh",
     "translation:generate-static": "tsx scripts/generate-static-translations.mts",
     "lint": "next lint"
   },

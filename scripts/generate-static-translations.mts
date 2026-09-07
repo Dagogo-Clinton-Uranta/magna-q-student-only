@@ -14,8 +14,6 @@ const outputDirectory = path.join(
   "i18n",
   "static-translations",
 );
-const providerUrl = process.env.LIBRETRANSLATE_URL?.replace(/\/$/, "");
-const providerKey = process.env.LIBRETRANSLATE_API_KEY;
 const dictionaryDirectory = process.env.STATIC_DICTIONARY_DIR;
 const locales = ["es", "pt", "fr", "hi", "bn"] as const;
 const visibleAttributes = new Set([
@@ -39,9 +37,9 @@ const visibleProperties = new Set([
   "title",
 ]);
 
-if (!providerUrl && !dictionaryDirectory) {
+if (!dictionaryDirectory) {
   throw new Error(
-    "Set LIBRETRANSLATE_URL or STATIC_DICTIONARY_DIR before generating the catalog.",
+    "Set STATIC_DICTIONARY_DIR before generating the offline catalog.",
   );
 }
 
@@ -157,46 +155,6 @@ function collectRenderedStrings(filePath: string, source: string) {
   return strings;
 }
 
-async function translateBatch(locale: string, texts: string[]) {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      const response = await fetch(`${providerUrl}/translate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          q: texts,
-          source: "en",
-          target: locale,
-          format: "text",
-          ...(providerKey ? { api_key: providerKey } : {}),
-        }),
-        signal: AbortSignal.timeout(60_000),
-      });
-      if (!response.ok) throw new Error(`Provider returned ${response.status}`);
-      const payload = (await response.json()) as { translatedText?: unknown };
-      const translations = Array.isArray(payload.translatedText)
-        ? payload.translatedText
-        : typeof payload.translatedText === "string"
-          ? [payload.translatedText]
-          : [];
-      if (
-        translations.length !== texts.length ||
-        translations.some((translation) => typeof translation !== "string")
-      )
-        throw new Error("Provider returned an invalid translation");
-      return translations as string[];
-    } catch (error) {
-      lastError = error;
-      if (attempt < 4)
-        await new Promise((resolve) =>
-          setTimeout(resolve, 1_500 * (attempt + 1)),
-        );
-    }
-  }
-  throw lastError;
-}
-
 function dictionaryTranslation(raw: string) {
   for (const section of raw.split("@")) {
     const separator = section.indexOf(".");
@@ -209,9 +167,8 @@ function dictionaryTranslation(raw: string) {
 }
 
 async function loadDictionary(locale: string) {
-  if (!dictionaryDirectory) return null;
   const source = await fs.readFile(
-    path.join(dictionaryDirectory, `en_${locale}.txt`),
+    path.join(dictionaryDirectory!, `en_${locale}.txt`),
     "utf8",
   );
   const dictionary = new Map<string, string>();
@@ -266,50 +223,19 @@ if (process.env.STATIC_TRANSLATION_DRY_RUN === "1") {
 await fs.mkdir(outputDirectory, { recursive: true });
 for (const locale of locales) {
   const outputPath = path.join(outputDirectory, `${locale}.json`);
-  const existing = JSON.parse(
-    await fs.readFile(outputPath, "utf8").catch(() => "{}"),
-  ) as Record<string, string>;
   const ordered = [...english].sort((left, right) => left.localeCompare(right));
   const dictionary = await loadDictionary(locale);
-  const catalog: Record<string, string> = dictionary ? {} : existing;
-  if (dictionary) {
-    const words = new Set<string>();
-    for (const text of ordered) {
-      catalog[text] = translateWordByWord(text, dictionary, locale);
-      for (const match of text.matchAll(/[A-Za-z]+(?:['’][A-Za-z]+)?/g))
-        words.add(match[0].toLowerCase());
-    }
-    for (const word of words) {
-      const translation = dictionary.get(word);
-      if (translation) catalog[`__word:${word}`] = translation;
-    }
-    await fs.writeFile(outputPath, `${JSON.stringify(catalog, null, 2)}\n`);
-    process.stdout.write(`${locale}: ${ordered.length}/${ordered.length}\n`);
-    continue;
-  }
-  const missing = ordered.filter((text) => !catalog[text]);
-  let completed = ordered.length - missing.length;
-  while (missing.length) {
-    const batch: string[] = [];
-    let characters = 0;
-    while (
-      missing.length &&
-      batch.length < 4 &&
-      characters + missing[0]!.length <= 600
-    ) {
-      const text = missing.shift()!;
-      batch.push(text);
-      characters += text.length;
-    }
-    if (!batch.length) batch.push(missing.shift()!);
-    const translations = await translateBatch(locale, batch);
-    batch.forEach((text, index) => {
-      catalog[text] = translations[index]!;
-    });
-    completed += batch.length;
-    await fs.writeFile(outputPath, `${JSON.stringify(catalog, null, 2)}\n`);
-    process.stdout.write(`${locale}: ${completed}/${ordered.length}\n`);
-  }
+  const catalog: Record<string, string> = {};
+  for (const text of ordered)
+    catalog[text] = translateWordByWord(text, dictionary, locale);
+  // Ship the complete dictionary so arbitrary database content can use the
+  // same instant browser-local translation as application-authored text.
+  for (const [word, translation] of dictionary)
+    catalog[`__word:${word}`] = translation;
+  await fs.writeFile(outputPath, `${JSON.stringify(catalog, null, 2)}\n`);
+  process.stdout.write(
+    `${locale}: ${ordered.length} interface strings + ${dictionary.size} words\n`,
+  );
 }
 
 process.stdout.write(

@@ -12,8 +12,6 @@ const serverSchema = publicSchema.extend({
   OPENAI_API_KEY: z.string().min(20).optional(),
   OPENAI_MODEL: z.string().min(1).default("gpt-5.6-sol"),
   OPENAI_BASE_URL: z.string().url().default("https://api.openai.com/v1"),
-  LIBRETRANSLATE_URL: z.string().url().default("http://127.0.0.1:5000"),
-  LIBRETRANSLATE_API_KEY: z.string().min(1).optional(),
   OPENAI_TRANSCRIPTION_MODEL: z.string().min(1).default("gpt-transcribe"),
   OPENAI_INTERVIEW_EVALUATION_MODEL: z.string().min(1).default("gpt-5.6-luna"),
   DEEPGRAM_API_KEY: z.string().min(1).optional(),
@@ -70,12 +68,6 @@ export function getServerEnv(): ServerEnv {
     OPENAI_API_KEY: optionalEnvironmentValue(process.env.OPENAI_API_KEY),
     OPENAI_MODEL: optionalEnvironmentValue(process.env.OPENAI_MODEL),
     OPENAI_BASE_URL: optionalEnvironmentValue(process.env.OPENAI_BASE_URL),
-    LIBRETRANSLATE_URL: optionalEnvironmentValue(
-      process.env.LIBRETRANSLATE_URL,
-    ),
-    LIBRETRANSLATE_API_KEY: optionalEnvironmentValue(
-      process.env.LIBRETRANSLATE_API_KEY,
-    ),
     OPENAI_TRANSCRIPTION_MODEL: optionalEnvironmentValue(
       process.env.OPENAI_TRANSCRIPTION_MODEL,
     ),

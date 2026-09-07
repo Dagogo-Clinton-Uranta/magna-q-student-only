@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { formatClock } from "@/lib/time/block-timer";
 import { PlayerUtilities } from "@/components/study/player-utilities";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { OnDemandTranslation } from "@/components/i18n/on-demand-translation";
 
 type Option = { id: string; text: string };
 type Nav = { position: number; answered: boolean; marked: boolean };
@@ -365,213 +364,197 @@ export function QuestionPlayer({
           </div>
         )}
 
-        <OnDemandTranslation
-          contentLabel="test question"
-          contentKey={question.questionId}
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.article
-              key={question.questionId}
-              initial={reduceMotion ? false : { opacity: 0, x: 18 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={reduceMotion ? undefined : { opacity: 0, x: -12 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="border border-line bg-white p-5 shadow-card sm:p-7"
-            >
-              <p
-                className="whitespace-pre-wrap text-lg leading-8"
-                data-translate-on-demand
-              >
-                <HighlightedText
-                  text={question.stem}
-                  phrases={question.keyPhrases ?? []}
-                  active={keyInfoVisible}
-                />
-              </p>
-              {question.imageUrl && (
-                // Signed private URLs are short-lived and cannot be statically configured for next/image.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={question.imageUrl}
-                  alt="Clinical question illustration"
-                  className="mt-5 max-h-96 w-full rounded-lg object-contain"
-                />
-              )}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.article
+            key={question.questionId}
+            initial={reduceMotion ? false : { opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduceMotion ? undefined : { opacity: 0, x: -12 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="border border-line bg-white p-5 shadow-card sm:p-7"
+          >
+            <p className="whitespace-pre-wrap text-lg leading-8">
+              <HighlightedText
+                text={question.stem}
+                phrases={question.keyPhrases ?? []}
+                active={keyInfoVisible}
+              />
+            </p>
+            {question.imageUrl && (
+              // Signed private URLs are short-lived and cannot be statically configured for next/image.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={question.imageUrl}
+                alt="Clinical question illustration"
+                className="mt-5 max-h-96 w-full rounded-lg object-contain"
+              />
+            )}
 
-              <div className="mt-6 flex flex-wrap gap-2 border-y border-line py-3">
-                <ActionButton
-                  active={question.marked}
-                  onClick={() => void toggleMark()}
-                  label={question.marked ? "★ Marked" : "☆ Mark"}
-                />
-                <ActionButton
-                  active={noteOpen || note.trim().length > 0}
-                  onClick={() => setNoteOpen(true)}
-                  label={note.trim() ? "Notes saved" : "Add notes"}
-                />
-                <ActionButton
-                  active={keyInfoVisible}
-                  disabled={(question.keyPhrases ?? []).length === 0}
-                  onClick={() => setKeyInfoVisible((current) => !current)}
-                  label="Key info"
-                />
-                <ActionButton
-                  active={aiOpen}
-                  onClick={() => void requestAiAssist()}
-                  label="AI assist"
-                />
-                <PlayerUtilities />
-              </div>
+            <div className="mt-6 flex flex-wrap gap-2 border-y border-line py-3">
+              <ActionButton
+                active={question.marked}
+                onClick={() => void toggleMark()}
+                label={question.marked ? "★ Marked" : "☆ Mark"}
+              />
+              <ActionButton
+                active={noteOpen || note.trim().length > 0}
+                onClick={() => setNoteOpen(true)}
+                label={note.trim() ? "Notes saved" : "Add notes"}
+              />
+              <ActionButton
+                active={keyInfoVisible}
+                disabled={(question.keyPhrases ?? []).length === 0}
+                onClick={() => setKeyInfoVisible((current) => !current)}
+                label="Key info"
+              />
+              <ActionButton
+                active={aiOpen}
+                onClick={() => void requestAiAssist()}
+                label="AI assist"
+              />
+              <PlayerUtilities />
+            </div>
 
-              {aiOpen && (
-                <aside className="mt-4 border border-brand-200 bg-soft p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="font-normal tracking-[0.02em] text-ink">
-                      AI second opinion
-                    </h2>
-                    <button
-                      type="button"
-                      onClick={() => setAiOpen(false)}
-                      className="min-h-11 px-2 text-sm font-semibold"
-                    >
-                      Close
-                    </button>
+            {aiOpen && (
+              <aside className="mt-4 border border-brand-200 bg-soft p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-normal tracking-[0.02em] text-ink">
+                    AI second opinion
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setAiOpen(false)}
+                    className="min-h-11 px-2 text-sm font-semibold"
+                  >
+                    Close
+                  </button>
+                </div>
+                {aiStatus === "loading" && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-body">
+                    <LoadingSpinner
+                      size="sm"
+                      label="Generating AI assistance"
+                    />
+                    Thinking…
                   </div>
-                  {aiStatus === "loading" && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-body">
-                      <LoadingSpinner
-                        size="sm"
-                        label="Generating AI assistance"
-                      />
-                      Thinking…
-                    </div>
-                  )}
-                  {(aiStatus === "ready" || aiStatus === "error") && (
-                    <p
-                      className="mt-2 whitespace-pre-wrap text-sm leading-6 text-body"
-                      data-translate-on-demand
-                    >
-                      {aiText}
-                    </p>
-                  )}
-                  <p className="mt-3 text-xs text-muted">
-                    Educational reasoning support only. AI assist is instructed
-                    not to reveal the answer and is not medical advice.
+                )}
+                {(aiStatus === "ready" || aiStatus === "error") && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-body">
+                    {aiText}
                   </p>
-                </aside>
-              )}
+                )}
+                <p className="mt-3 text-xs text-muted">
+                  Educational reasoning support only. AI assist is instructed
+                  not to reveal the answer and is not medical advice.
+                </p>
+              </aside>
+            )}
 
-              <fieldset className="mt-7 space-y-4">
-                <legend className="sr-only">Answer choices</legend>
-                {question.options.map((option, index) => {
-                  const correct =
-                    question.answered && question.correctOptionId === option.id;
-                  const chosen = selected === option.id;
-                  const explanationStyle = chosen
-                    ? correct
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-950"
-                      : "border-red-300 bg-red-50 text-red-950"
-                    : "border-slate-200 bg-slate-50 text-slate-700";
-                  return (
-                    <div key={option.id}>
-                      <label
-                        className={`flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border p-3 ${
-                          correct
-                            ? "border-emerald-500 bg-emerald-50"
-                            : chosen && question.answered
-                              ? "border-red-500 bg-red-50"
-                              : chosen
-                                ? "border-brand-600 bg-brand-50"
-                                : "border-line"
+            <fieldset className="mt-7 space-y-4">
+              <legend className="sr-only">Answer choices</legend>
+              {question.options.map((option, index) => {
+                const correct =
+                  question.answered && question.correctOptionId === option.id;
+                const chosen = selected === option.id;
+                const explanationStyle = chosen
+                  ? correct
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-950"
+                    : "border-red-300 bg-red-50 text-red-950"
+                  : "border-slate-200 bg-slate-50 text-slate-700";
+                return (
+                  <div key={option.id}>
+                    <label
+                      className={`flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border p-3 ${
+                        correct
+                          ? "border-emerald-500 bg-emerald-50"
+                          : chosen && question.answered
+                            ? "border-red-500 bg-red-50"
+                            : chosen
+                              ? "border-brand-600 bg-brand-50"
+                              : "border-line"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="answer"
+                        value={option.id}
+                        checked={chosen}
+                        disabled={question.answered || loading}
+                        onChange={() => void chooseOption(option.id)}
+                        className="mt-1 h-5 w-5"
+                      />
+                      <span
+                        className={`min-w-0 flex-1 ${
+                          struck.includes(option.id)
+                            ? "line-through opacity-50"
+                            : ""
                         }`}
                       >
-                        <input
-                          type="radio"
-                          name="answer"
-                          value={option.id}
-                          checked={chosen}
-                          disabled={question.answered || loading}
-                          onChange={() => void chooseOption(option.id)}
-                          className="mt-1 h-5 w-5"
-                        />
-                        <span
-                          className={`min-w-0 flex-1 ${
-                            struck.includes(option.id)
-                              ? "line-through opacity-50"
-                              : ""
-                          }`}
-                        >
-                          <strong className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100">
-                            {String.fromCharCode(65 + index)}
-                          </strong>
-                          <span data-translate-on-demand>{option.text}</span>
-                        </span>
-                        {question.answered &&
-                          question.optionStats?.[option.id] !== undefined && (
-                            <span className="shrink-0 rounded-full bg-white px-2 py-1 text-xs font-bold text-slate-700">
-                              {question.optionStats[option.id]}% answered
-                            </span>
-                          )}
-                        {!question.answered && (
-                          <button
-                            type="button"
-                            aria-label={`Strike option ${String.fromCharCode(65 + index)}`}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              setStruck((current) =>
-                                current.includes(option.id)
-                                  ? current.filter((id) => id !== option.id)
-                                  : [...current, option.id],
-                              );
-                            }}
-                            className="min-h-11 shrink-0 px-2 text-xs font-bold"
-                          >
-                            abc̶
-                          </button>
-                        )}
-                      </label>
-
+                        <strong className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100">
+                          {String.fromCharCode(65 + index)}
+                        </strong>
+                        <span>{option.text}</span>
+                      </span>
                       {question.answered &&
-                        question.rationales?.[option.id] && (
-                          <details
-                            key={`${question.questionId}-${option.id}-explanation`}
-                            open={chosen || undefined}
-                            className={`mt-2 rounded-lg border px-4 py-3 text-sm ${explanationStyle}`}
-                          >
-                            <summary className="cursor-pointer font-bold">
-                              Why this option is{" "}
-                              {correct ? "correct" : "incorrect"}
-                            </summary>
-                            <p
-                              className="mt-2 leading-6"
-                              data-translate-on-demand
-                            >
-                              {question.rationales[option.id]}
-                            </p>
-                          </details>
+                        question.optionStats?.[option.id] !== undefined && (
+                          <span className="shrink-0 rounded-full bg-white px-2 py-1 text-xs font-bold text-slate-700">
+                            {question.optionStats[option.id]}% answered
+                          </span>
                         )}
-                    </div>
-                  );
-                })}
-              </fieldset>
+                      {!question.answered && (
+                        <button
+                          type="button"
+                          aria-label={`Strike option ${String.fromCharCode(65 + index)}`}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setStruck((current) =>
+                              current.includes(option.id)
+                                ? current.filter((id) => id !== option.id)
+                                : [...current, option.id],
+                            );
+                          }}
+                          className="min-h-11 shrink-0 px-2 text-xs font-bold"
+                        >
+                          abc̶
+                        </button>
+                      )}
+                    </label>
 
-              {question.mode === "timed" && !question.answered && (
-                <button
-                  type="button"
-                  onClick={() => void submit()}
-                  disabled={!selected || loading}
-                  className="button-primary mt-6 w-full disabled:opacity-50 sm:w-auto"
-                >
-                  Save answer
-                </button>
-              )}
+                    {question.answered && question.rationales?.[option.id] && (
+                      <details
+                        key={`${question.questionId}-${option.id}-explanation`}
+                        open={chosen || undefined}
+                        className={`mt-2 rounded-lg border px-4 py-3 text-sm ${explanationStyle}`}
+                      >
+                        <summary className="cursor-pointer font-bold">
+                          Why this option is {correct ? "correct" : "incorrect"}
+                        </summary>
+                        <p className="mt-2 leading-6">
+                          {question.rationales[option.id]}
+                        </p>
+                      </details>
+                    )}
+                  </div>
+                );
+              })}
+            </fieldset>
 
-              {question.answered && question.explanation && (
-                <Explanation question={question} />
-              )}
-            </motion.article>
-          </AnimatePresence>
-        </OnDemandTranslation>
+            {question.mode === "timed" && !question.answered && (
+              <button
+                type="button"
+                onClick={() => void submit()}
+                disabled={!selected || loading}
+                className="button-primary mt-6 w-full disabled:opacity-50 sm:w-auto"
+              >
+                Save answer
+              </button>
+            )}
+
+            {question.answered && question.explanation && (
+              <Explanation question={question} />
+            )}
+          </motion.article>
+        </AnimatePresence>
 
         <section className="mt-5 border border-line bg-white p-4">
           <div className="flex items-center justify-between">
@@ -755,46 +738,33 @@ function Explanation({ question }: { question: Question }) {
           ? "Correct — full explanation"
           : "Incorrect — full explanation"}
       </summary>
-      <p
-        className="mt-3 whitespace-pre-wrap leading-7"
-        data-translate-on-demand
-      >
+      <p className="mt-3 whitespace-pre-wrap leading-7">
         {question.explanation}
       </p>
       {question.educationalObjective && (
         <div className="mt-4">
           <h3 className="font-bold">Educational objective</h3>
-          <p className="mt-1" data-translate-on-demand>
-            {question.educationalObjective}
-          </p>
+          <p className="mt-1">{question.educationalObjective}</p>
         </div>
       )}
       {question.highYieldSummary && (
         <div className="mt-4">
           <h3 className="font-bold">High-yield summary</h3>
-          <p className="mt-1" data-translate-on-demand>
-            {question.highYieldSummary}
-          </p>
+          <p className="mt-1">{question.highYieldSummary}</p>
         </div>
       )}
       {question.usSystemContextNote && (
         <div className="mt-4 rounded-lg bg-blue-50 p-4">
           <h3 className="font-bold text-blue-950">US clinical context</h3>
-          <p className="mt-1 text-blue-950" data-translate-on-demand>
-            {question.usSystemContextNote}
-          </p>
+          <p className="mt-1 text-blue-950">{question.usSystemContextNote}</p>
         </div>
       )}
       {question.glossary && question.glossary.length > 0 && (
         <dl className="mt-4">
           {question.glossary.map((item) => (
             <div key={item.term}>
-              <dt className="font-bold" data-translate-on-demand>
-                {item.term}
-              </dt>
-              <dd className="text-slate-700" data-translate-on-demand>
-                {item.definition}
-              </dd>
+              <dt className="font-bold">{item.term}</dt>
+              <dd className="text-slate-700">{item.definition}</dd>
             </div>
           ))}
         </dl>

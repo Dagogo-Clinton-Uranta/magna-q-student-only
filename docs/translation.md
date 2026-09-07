@@ -1,104 +1,46 @@
-# Offline site translation
+# Browser-local site translation
 
-Magna-Q ships application-authored interface translations with the web app.
-Long database-backed articles and test questions are translated on demand with
-a self-hosted LibreTranslate service. Page text is not sent to OpenAI, Google,
-Microsoft, or DeepL.
+Magna-Q translates all rendered page text in the user's browser with bundled
+offline catalogs. This includes application interface text and dynamic content
+loaded from the database, such as resources, guideline articles, question
+stems, answer choices, rationales, and explanations.
 
-## Static interface catalog
+Translation makes no request to Railway, LibreTranslate, OpenAI, Google,
+Microsoft, or DeepL. There is no translation API key or translation service to
+deploy. Each visitor downloads only the catalog for their selected language.
 
-Stable headings, instructions, buttons, labels, placeholders, and accessibility
-copy are compiled into one JSON catalog per supported locale. Only the chosen
-locale is loaded by the browser, and static translation makes no network
-request. Current catalogs contain exact source strings plus word-level fallback
-entries for interface strings assembled at runtime.
+## Catalogs
 
-Regenerate catalogs after changing application-authored copy with either the
-offline dictionaries or LibreTranslate:
+One JSON catalog per supported non-English locale is committed under
+`src/lib/i18n/static-translations/`. Each catalog contains exact stable
+interface strings and the complete English-to-target-language word dictionary.
+The exact entries improve recurring interface text; the complete word entries
+allow previously unseen database content to be translated locally.
+
+The current source dictionaries are from the freely usable
+[Rosetta offline translation project](https://github.com/tachyon-ii/rosetta).
+They are generation inputs only and are not required in production.
+
+Regenerate the catalogs after changing application-authored copy or replacing
+the source dictionaries:
 
 ```bash
 STATIC_DICTIONARY_DIR=/path/to/rosetta/dictionaries npm run translation:generate-static
-LIBRETRANSLATE_URL=http://127.0.0.1:5000 npm run translation:generate-static
 ```
 
-The generated catalogs are committed under
-`src/lib/i18n/static-translations/`. The offline dictionaries are generation
-inputs only and are not shipped to browsers. The current word dictionaries are
-from the freely usable
-[Rosetta offline translation project](https://github.com/tachyon-ii/rosetta).
-
-## Local setup
-
-Start the companion service before the Next.js application:
-
-```bash
-npm run translation:start
-npm run translation:logs
-```
-
-The first start downloads the English, Spanish, Portuguese, French, Hindi, and
-Bengali model packages. They are retained in the `libretranslate_models` Docker
-volume and are not downloaded again on an ordinary container restart. The
-service is bound to `127.0.0.1:5000`, matching the default
-`LIBRETRANSLATE_URL`.
-
-Stop it without deleting its model volume:
-
-```bash
-npm run translation:stop
-```
-
-Do not use `docker compose down --volumes` unless the models should be deleted
-and downloaded again.
-
-If Docker is unavailable, install and run the isolated non-root version:
-
-```bash
-npm run translation:install-local
-npm run translation:start-local
-```
-
-This uses `uv`, keeps the Python environment and downloaded models under the
-ignored `.libretranslate/` directory, and does not modify system Python. Keep
-the second command running alongside `npm run dev`.
-
-## Production
-
-Vercel functions cannot host the Python runtime and several hundred megabytes
-of model data. Deploy `libretranslate/libretranslate:v1.8.4` as a companion
-container on a persistent service such as Railway, Fly.io, or a VPS, with the
-same `LT_LOAD_ONLY` value and a persistent volume mounted at
-`/home/libretranslate/.cache`.
-
-When using that Railway mount path, set these service variables so downloaded
-Argos packages are written to the persistent volume:
-
-```text
-XDG_CACHE_HOME=/home/libretranslate/.cache
-XDG_DATA_HOME=/home/libretranslate/.cache/data
-XDG_CONFIG_HOME=/home/libretranslate/.cache/config
-ARGOS_PACKAGES_DIR=/home/libretranslate/.cache/models
-```
-
-Set these server-only variables in Vercel:
-
-```text
-LIBRETRANSLATE_URL=https://translation.example.com
-LIBRETRANSLATE_API_KEY=<service API key, when enabled>
-```
-
-Protect a publicly reachable instance with LibreTranslate API keys or a private
-gateway. Never expose its API key with a `NEXT_PUBLIC_` prefix.
+The directory must contain `en_es.txt`, `en_pt.txt`, `en_fr.txt`, `en_hi.txt`,
+and `en_bn.txt`.
 
 ## Runtime behavior
 
-The DOM observer applies the bundled selected-language catalog to static and
-client-rendered interface copy immediately. It never calls Railway for static
-text. Database article and question fields are marked
-`data-translate-on-demand`; their translation button sends small sequential
-batches through the Next.js route and stores completed results in browser
-storage for later visits.
+The selected catalog is loaded once when the language changes. A DOM observer
+translates current content and content added later by client navigation or a
+database response. Original English values are retained in memory so switching
+languages does not translate an already translated string.
 
-Elements marked `data-no-translate`, code, formulas, editable fields, scripts,
-and styles are intentionally excluded. Input values entered by a student are
-not modified; labels and placeholders are translated from the static catalog.
+Translation is deliberately literal and speed-first. Words missing from the
+dictionary—including some medical terminology, names, abbreviations, and
+brand names—remain unchanged. Elements marked `data-no-translate`, code,
+formulas, editable fields, scripts, and styles are intentionally excluded.
+Student-entered input values are never modified; their labels and placeholders
+are translated.

@@ -8,6 +8,7 @@ test-results/
 .env.local
 .env.*.local
 !.env.example
+.libretranslate/
 supabase/.temp/
 *.tsbuildinfo
 *.odt
@@ -15,4 +16,3 @@ supabase/.temp/
 *.xlsx
 *.csv
 *.fig
-.libretranslate/
