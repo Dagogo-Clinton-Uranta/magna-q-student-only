@@ -27,6 +27,7 @@
     "translation:logs": "docker compose -f docker-compose.translation.yml logs -f libretranslate",
     "translation:install-local": "bash scripts/install-libretranslate-local.sh",
     "translation:start-local": "bash scripts/start-libretranslate-local.sh",
+    "translation:generate-static": "tsx scripts/generate-static-translations.mts",
     "lint": "next lint"
   },
   "dependencies": {

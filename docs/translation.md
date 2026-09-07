@@ -1,8 +1,31 @@
 # Offline site translation
 
-Magna-Q translates application-authored and dynamically loaded page text with
-a self-hosted LibreTranslate service. LibreTranslate runs the downloaded Argos
-models locally; page text is not sent to OpenAI, Google, Microsoft, or DeepL.
+Magna-Q ships application-authored interface translations with the web app.
+Long database-backed articles and test questions are translated on demand with
+a self-hosted LibreTranslate service. Page text is not sent to OpenAI, Google,
+Microsoft, or DeepL.
+
+## Static interface catalog
+
+Stable headings, instructions, buttons, labels, placeholders, and accessibility
+copy are compiled into one JSON catalog per supported locale. Only the chosen
+locale is loaded by the browser, and static translation makes no network
+request. Current catalogs contain exact source strings plus word-level fallback
+entries for interface strings assembled at runtime.
+
+Regenerate catalogs after changing application-authored copy with either the
+offline dictionaries or LibreTranslate:
+
+```bash
+STATIC_DICTIONARY_DIR=/path/to/rosetta/dictionaries npm run translation:generate-static
+LIBRETRANSLATE_URL=http://127.0.0.1:5000 npm run translation:generate-static
+```
+
+The generated catalogs are committed under
+`src/lib/i18n/static-translations/`. The offline dictionaries are generation
+inputs only and are not shipped to browsers. The current word dictionaries are
+from the freely usable
+[Rosetta offline translation project](https://github.com/tachyon-ii/rosetta).
 
 ## Local setup
 
@@ -69,11 +92,13 @@ gateway. Never expose its API key with a `NEXT_PUBLIC_` prefix.
 
 ## Runtime behavior
 
-The Next.js route batches page strings, validates request size and origin, and
-keeps a bounded in-process translation cache. The browser also caches results
-for the lifetime of the application layout. A DOM observer covers streamed and
-client-rendered content such as search results, dialogs, and notifications.
+The DOM observer applies the bundled selected-language catalog to static and
+client-rendered interface copy immediately. It never calls Railway for static
+text. Database article and question fields are marked
+`data-translate-on-demand`; their translation button sends small sequential
+batches through the Next.js route and stores completed results in browser
+storage for later visits.
 
 Elements marked `data-no-translate`, code, formulas, editable fields, scripts,
 and styles are intentionally excluded. Input values entered by a student are
-not modified; labels and placeholders are translated.
+not modified; labels and placeholders are translated from the static catalog.
