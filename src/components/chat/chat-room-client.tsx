@@ -322,8 +322,11 @@ export function ChatRoomClient({
                 {message.content}
               </p>
               <div className="mt-2 flex items-center gap-2 text-xs opacity-80">
-                <time>
-                  {new Date(message.createdAt).toLocaleTimeString([], {
+                <time dateTime={message.createdAt}>
+                  {new Date(message.createdAt).toLocaleString([], {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
                   })}

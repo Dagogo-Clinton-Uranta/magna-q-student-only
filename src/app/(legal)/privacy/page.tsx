@@ -4,7 +4,7 @@ const effectiveDate = "5 September 2026";
 
 export default function PrivacyPage() {
   return (
-    <article className="prose prose-slate max-w-none">
+    <article className="legal-article">
       <h1>Privacy Notice</h1>
       <p>
         <strong>Effective and last updated:</strong> {effectiveDate}

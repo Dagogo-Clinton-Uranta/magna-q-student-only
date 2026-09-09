@@ -4,7 +4,7 @@ const effectiveDate = "5 September 2026";
 
 export default function TermsPage() {
   return (
-    <article className="prose prose-slate max-w-none">
+    <article className="legal-article">
       <h1>Terms and Conditions of Use</h1>
       <p>
         <strong>Effective and last updated:</strong> {effectiveDate}

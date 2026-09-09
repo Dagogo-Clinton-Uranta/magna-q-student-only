@@ -8,14 +8,14 @@ export default function LegalLayout({
 }) {
   return (
     <>
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex min-h-16 max-w-4xl items-center px-4 sm:px-6">
-          <Link href="/" className="font-bold text-blue-900">
+      <header className="border-b border-line bg-surface">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center px-4 sm:px-6">
+          <Link href="/" className="font-bold text-ink">
             {appConfig.name}
           </Link>
         </div>
       </header>
-      <main className="mx-auto min-h-[70vh] max-w-4xl px-4 py-12 sm:px-6">
+      <main className="mx-auto min-h-[70vh] max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
         {children}
       </main>
     </>

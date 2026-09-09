@@ -139,6 +139,65 @@ html.dark {
   .feature-pulse-button {
     border-radius: 9999px !important;
   }
+
+  .legal-article {
+    @apply mx-auto max-w-5xl border border-brand-200 bg-surface p-5 shadow-card sm:p-8;
+  }
+
+  .legal-article > h1 {
+    @apply border-b border-brand-300 pb-5 text-3xl font-normal tracking-[0.02em] text-ink sm:text-4xl;
+  }
+
+  .legal-article p {
+    @apply mt-4 leading-7 text-muted;
+  }
+
+  .legal-article strong {
+    @apply font-bold text-ink;
+  }
+
+  .legal-article a {
+    @apply font-semibold text-brand-800 underline decoration-brand-300 underline-offset-4 transition hover:text-brand-600;
+  }
+
+  .legal-article > nav {
+    @apply mt-8 border border-line bg-soft p-5 sm:p-6;
+  }
+
+  .legal-article > nav h2 {
+    @apply border-b border-brand-300 pb-3 text-lg font-bold text-ink;
+  }
+
+  .legal-article > nav ol {
+    @apply mt-4 grid list-none gap-x-8 gap-y-3 p-0 text-sm sm:grid-cols-2;
+  }
+
+  .legal-article > nav li {
+    @apply m-0 leading-6;
+  }
+
+  .legal-article section {
+    @apply mt-8 scroll-mt-24 border border-line bg-field p-5 sm:p-6;
+  }
+
+  .legal-article section > h2 {
+    @apply border-b border-brand-300 pb-3 text-xl font-bold leading-8 text-ink sm:text-2xl;
+  }
+
+  .legal-article section h3 {
+    @apply mt-7 border-b border-line pb-2 text-lg font-bold text-ink;
+  }
+
+  /* Legal clauses retain list semantics for accessibility but read visually
+     as separated paragraphs, without bullets or numbered list markers. */
+  .legal-article section ul,
+  .legal-article section ol {
+    @apply mt-4 list-none space-y-4 p-0;
+  }
+
+  .legal-article section li {
+    @apply m-0 leading-7 text-muted;
+  }
 }
 
 @keyframes feature-pulse-beat {
