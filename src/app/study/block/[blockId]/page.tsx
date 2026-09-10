@@ -12,7 +12,11 @@ export default async function BlockPage({
   const { blockId } = await params;
   const { profile } = await requirePaidStudent(`/study/block/${blockId}`);
   const supabase = await createClient();
-  const { data: block } = await supabase
+  // Study access is currently free at the application and RPC layers, while
+  // the legacy table-read policy still requires a billing subscription. Read
+  // only this authenticated student's block metadata with the server client so
+  // a successfully created free-access block is not mistaken for a 404.
+  const { data: block } = await createServiceRoleClient()
     .from("test_blocks")
     .select("id,current_position,status")
     .eq("id", blockId)

@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 type ErrorScreenProps = {
   eyebrow: string;
@@ -9,6 +10,26 @@ type ErrorScreenProps = {
 };
 
 export function ErrorScreen({ eyebrow, title, description }: ErrorScreenProps) {
+  const [returnHref, setReturnHref] = useState("/login");
+
+  useEffect(() => {
+    let active = true;
+    const resolveReturnHref = async () => {
+      try {
+        const {
+          data: { user },
+        } = await createClient().auth.getUser();
+        if (active) setReturnHref(user ? "/dashboard" : "/login");
+      } catch {
+        if (active) setReturnHref("/login");
+      }
+    };
+    void resolveReturnHref();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <main className="flex min-h-[calc(100vh-5rem)] flex-col items-center justify-center bg-canvas">
       <section className="mx-auto flex w-full max-w-3xl flex-col items-center px-6 py-12 text-center sm:py-16">
@@ -52,9 +73,9 @@ export function ErrorScreen({ eyebrow, title, description }: ErrorScreenProps) {
           </p>
 
           <div className="mt-8 flex justify-center">
-            <Link href="/" className="button-primary min-w-44">
+            <a href={returnHref} className="button-primary min-w-44">
               Return home
-            </Link>
+            </a>
           </div>
         </div>
       </section>
