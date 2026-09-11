@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { YoutubeVideoCard } from "@/components/resources/youtube-video-card";
+import { Pagination } from "@/components/ui/pagination";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import { getResourceCategory } from "@/lib/resources/videos";
 import { getStageDefinition } from "@/lib/stages";
@@ -63,25 +64,12 @@ export default async function ResourceCategoryPage({
         ))}
       </section>
 
-      {totalPages > 1 && (
-        <nav
-          className="mt-8 flex items-center justify-center gap-3"
-          aria-label="Video pages"
-        >
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-            (page) => (
-              <Link
-                key={page}
-                href={`/resources/${category.slug}?page=${page}`}
-                aria-current={page === requestedPage ? "page" : undefined}
-                className={`flex h-11 min-w-11 items-center justify-center border px-3 font-normal ${page === requestedPage ? "border-black bg-black text-white" : "border-line bg-white text-body"}`}
-              >
-                {page}
-              </Link>
-            ),
-          )}
-        </nav>
-      )}
+      <Pagination
+        currentPage={requestedPage}
+        totalPages={totalPages}
+        ariaLabel="Video pages"
+        getPageHref={(page) => `/resources/${category.slug}?page=${page}`}
+      />
     </AppShell>
   );
 }

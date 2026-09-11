@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { SHOW_TEST_TOUR_STORAGE_KEY } from "@/lib/study/player-preferences";
 import {
   calculatorInput,
   initialCalculatorState,
@@ -29,7 +30,7 @@ export function PlayerUtilities() {
     setContrast(high);
     document.documentElement.dataset.playerFont = size;
     document.documentElement.classList.toggle("high-contrast", high);
-    if (!localStorage.getItem("player-tutorial-complete")) {
+    if (localStorage.getItem(SHOW_TEST_TOUR_STORAGE_KEY) === "true") {
       setTab("tutorial");
       setOpen(true);
     }
@@ -55,7 +56,6 @@ export function PlayerUtilities() {
     }
   }
   function finishTutorial() {
-    localStorage.setItem("player-tutorial-complete", "true");
     setOpen(false);
   }
   return (
@@ -166,7 +166,6 @@ export function PlayerUtilities() {
                 </label>
                 <button
                   onClick={() => {
-                    localStorage.removeItem("player-tutorial-complete");
                     setTab("tutorial");
                   }}
                   className="min-h-11 rounded-lg border border-slate-300 px-4 font-semibold"

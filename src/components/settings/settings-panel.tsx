@@ -4,6 +4,7 @@ import React, { useEffect, useState, useTransition } from "react";
 import { updatePreferredLocale } from "@/app/settings/actions";
 import { useI18n } from "@/components/i18n/i18n-provider";
 import { LOCALE_OPTIONS, type AppLocale } from "@/lib/i18n/config";
+import { SHOW_TEST_TOUR_STORAGE_KEY } from "@/lib/study/player-preferences";
 
 const THEME_STORAGE_KEY = "magna-q-theme";
 
@@ -14,6 +15,7 @@ export function SettingsPanel({
 }) {
   const [darkMode, setDarkMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
+  const [showTestTour, setShowTestTour] = useState(false);
   const [selectedLocale, setSelectedLocale] = useState(initialLocale);
   const [languageStatus, setLanguageStatus] = useState<
     "idle" | "saved" | "error"
@@ -23,6 +25,9 @@ export function SettingsPanel({
 
   useEffect(() => {
     setDarkMode(document.documentElement.classList.contains("dark"));
+    setShowTestTour(
+      window.localStorage.getItem(SHOW_TEST_TOUR_STORAGE_KEY) === "true",
+    );
     setLocale(initialLocale);
     document.documentElement.lang = initialLocale;
   }, [initialLocale, setLocale]);
@@ -31,6 +36,11 @@ export function SettingsPanel({
     document.documentElement.classList.toggle("dark", enabled);
     window.localStorage.setItem(THEME_STORAGE_KEY, enabled ? "dark" : "light");
     setDarkMode(enabled);
+  }
+
+  function setTestTourPreference(enabled: boolean) {
+    window.localStorage.setItem(SHOW_TEST_TOUR_STORAGE_KEY, String(enabled));
+    setShowTestTour(enabled);
   }
 
   function setLanguagePreference(locale: AppLocale) {
@@ -73,6 +83,12 @@ export function SettingsPanel({
           description={t("settings.darkModeDescription")}
           checked={darkMode}
           onCheckedChange={setDarkModePreference}
+        />
+        <SettingRow
+          title={t("settings.showTestTour")}
+          description={t("settings.showTestTourDescription")}
+          checked={showTestTour}
+          onCheckedChange={setTestTourPreference}
         />
         <div className="p-6 sm:p-8">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">

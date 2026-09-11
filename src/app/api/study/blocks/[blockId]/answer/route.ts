@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { answerSchema } from "@/lib/validation/player";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
-import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export async function POST(
   request: Request,
@@ -39,15 +38,8 @@ export async function POST(
       { status: 409 },
     );
   const shaped = data as Record<string, unknown>;
-  if (typeof shaped.imagePath === "string" && shaped.imagePath) {
-    // The paid, ownership-checking answer RPC authorized this exact image path.
-    // Mint only its short-lived URL server-side so other bucket objects remain
-    // inaccessible to the student's Supabase session.
-    const { data: signed } = await createServiceRoleClient()
-      .storage.from("question-images")
-      .createSignedUrl(shaped.imagePath, 300);
-    shaped.imageUrl = signed?.signedUrl ?? null;
-  }
+  // The player already has the current question image. Avoid another storage
+  // round trip on the latency-sensitive answer path; the client retains its URL.
   delete shaped.imagePath;
   return NextResponse.json(shaped, {
     headers: { "Cache-Control": "private, no-store" },

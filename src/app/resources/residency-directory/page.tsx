@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { ResidencyDirectoryTable } from "@/components/resources/residency-directory-table";
 import { SearchableFilter } from "@/components/resources/searchable-filter";
+import { Pagination } from "@/components/ui/pagination";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
   directoryHref,
@@ -132,10 +133,7 @@ export default async function ResidencyDirectoryPage({
       .order("id", { ascending: true });
   }
 
-  directoryQuery = directoryQuery.range(
-    from,
-    from + RESIDENCIES_PER_PAGE - 1,
-  );
+  directoryQuery = directoryQuery.range(from, from + RESIDENCIES_PER_PAGE - 1);
 
   const { data, count, error } = await directoryQuery;
   if (error) throw new Error("Unable to load the residency directory.");
@@ -313,66 +311,21 @@ export default async function ResidencyDirectoryPage({
         )}
       </section>
 
-      {totalPages > 1 && (
-        <nav
-          className="mt-8 flex flex-wrap items-center justify-center gap-2"
-          aria-label="Residency directory pages"
-        >
-          {requestedPage > 1 && (
-            <Link
-              href={directoryHref({
-                page: requestedPage - 1,
-                specialty,
-                location,
-                visa,
-                sort,
-                imgDataOnly,
-              })}
-              className="flex h-11 items-center border border-line bg-white px-4 font-semibold text-body"
-            >
-              ← Previous
-            </Link>
-          )}
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-            (page) => (
-              <Link
-                key={page}
-                href={directoryHref({
-                  page,
-                  specialty,
-                  location,
-                  visa,
-                  sort,
-                  imgDataOnly,
-                })}
-                aria-current={page === requestedPage ? "page" : undefined}
-                className={`flex h-11 min-w-11 items-center justify-center border px-3 font-semibold ${
-                  page === requestedPage
-                    ? "border-black bg-black text-white"
-                    : "border-line bg-white text-body"
-                }`}
-              >
-                {page}
-              </Link>
-            ),
-          )}
-          {requestedPage < totalPages && (
-            <Link
-              href={directoryHref({
-                page: requestedPage + 1,
-                specialty,
-                location,
-                visa,
-                sort,
-                imgDataOnly,
-              })}
-              className="flex h-11 items-center border border-line bg-white px-4 font-semibold text-body"
-            >
-              Next →
-            </Link>
-          )}
-        </nav>
-      )}
+      <Pagination
+        currentPage={requestedPage}
+        totalPages={totalPages}
+        ariaLabel="Residency directory pages"
+        getPageHref={(page) =>
+          directoryHref({
+            page,
+            specialty,
+            location,
+            visa,
+            sort,
+            imgDataOnly,
+          })
+        }
+      />
     </AppShell>
   );
 }

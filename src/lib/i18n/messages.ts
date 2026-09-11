@@ -22,6 +22,8 @@ export type MessageKey =
   | "settings.intro"
   | "settings.darkMode"
   | "settings.darkModeDescription"
+  | "settings.showTestTour"
+  | "settings.showTestTourDescription"
   | "settings.language"
   | "settings.languageDescription"
   | "settings.contentNotice"
@@ -58,6 +60,9 @@ const en: MessagePack = {
   "settings.darkMode": "Dark mode",
   "settings.darkModeDescription":
     "Use a darker colour palette across the entire site.",
+  "settings.showTestTour": "Show tour before tests",
+  "settings.showTestTourDescription":
+    "Open the question player tour when you start a Step 1 or Step 2 test.",
   "settings.language": "Study language",
   "settings.languageDescription":
     "Choose the language used throughout Magna-Q.",
@@ -97,6 +102,9 @@ const es: MessagePack = {
   "settings.darkMode": "Modo oscuro",
   "settings.darkModeDescription":
     "Usa una paleta de colores más oscura en todo el sitio.",
+  "settings.showTestTour": "Mostrar recorrido antes de los exámenes",
+  "settings.showTestTourDescription":
+    "Abre el recorrido del reproductor de preguntas al iniciar un examen de Step 1 o Step 2.",
   "settings.language": "Idioma de estudio",
   "settings.languageDescription":
     "Elige el idioma que se usará en todo Magna-Q.",
@@ -136,6 +144,9 @@ const pt: MessagePack = {
   "settings.darkMode": "Modo escuro",
   "settings.darkModeDescription":
     "Use uma paleta de cores mais escura em todo o site.",
+  "settings.showTestTour": "Mostrar apresentação antes dos testes",
+  "settings.showTestTourDescription":
+    "Abra a apresentação do leitor de perguntas ao iniciar um teste Step 1 ou Step 2.",
   "settings.language": "Idioma de estudo",
   "settings.languageDescription":
     "Escolha o idioma utilizado em todo o Magna-Q.",
@@ -175,6 +186,9 @@ const fr: MessagePack = {
   "settings.darkMode": "Mode sombre",
   "settings.darkModeDescription":
     "Utilisez une palette de couleurs plus sombre sur l’ensemble du site.",
+  "settings.showTestTour": "Afficher la visite avant les tests",
+  "settings.showTestTourDescription":
+    "Ouvrez la visite du lecteur de questions au début d’un test Step 1 ou Step 2.",
   "settings.language": "Langue d’étude",
   "settings.languageDescription":
     "Choisissez la langue utilisée dans l’ensemble de Magna-Q.",
@@ -214,6 +228,9 @@ const hi: MessagePack = {
     "चुनें कि Magna-Q कैसा दिखे और आप हमसे संदेश कैसे प्राप्त करना चाहें।",
   "settings.darkMode": "डार्क मोड",
   "settings.darkModeDescription": "पूरी साइट पर गहरे रंगों का उपयोग करें।",
+  "settings.showTestTour": "परीक्षा से पहले टूर दिखाएँ",
+  "settings.showTestTourDescription":
+    "Step 1 या Step 2 परीक्षा शुरू करते समय प्रश्न प्लेयर का टूर खोलें।",
   "settings.language": "अध्ययन की भाषा",
   "settings.languageDescription":
     "पूरे Magna-Q में उपयोग की जाने वाली भाषा चुनें।",
@@ -251,6 +268,9 @@ const bn: MessagePack = {
     "Magna-Q কেমন দেখাবে এবং আমাদের বার্তা কীভাবে পেতে চান তা বেছে নিন।",
   "settings.darkMode": "ডার্ক মোড",
   "settings.darkModeDescription": "পুরো সাইটে গাঢ় রঙের প্যালেট ব্যবহার করুন।",
+  "settings.showTestTour": "পরীক্ষার আগে ট্যুর দেখান",
+  "settings.showTestTourDescription":
+    "Step 1 বা Step 2 পরীক্ষা শুরু করার সময় প্রশ্ন প্লেয়ারের ট্যুর খুলুন।",
   "settings.language": "অধ্যয়নের ভাষা",
   "settings.languageDescription": "Magna-Q জুড়ে ব্যবহৃত ভাষা বেছে নিন।",
   "settings.contentNotice":

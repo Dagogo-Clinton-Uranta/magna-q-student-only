@@ -1,12 +1,20 @@
 "use client";
 /* eslint-disable react-hooks/exhaustive-deps -- The countdown intentionally uses the latest render closure without recreating request functions. */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { formatClock } from "@/lib/time/block-timer";
+import { getPageWindow } from "@/lib/pagination";
 import { PlayerUtilities } from "@/components/study/player-utilities";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+  normalizeHighlights,
+  readQuestionHighlights,
+  selectedTextHighlight,
+  type TextHighlight,
+  writeQuestionHighlights,
+} from "@/lib/study/question-highlights";
 
 type Option = { id: string; text: string };
 type Nav = { position: number; answered: boolean; marked: boolean };
@@ -52,12 +60,16 @@ export function QuestionPlayer({
   const [question, setQuestion] = useState(initial);
   const [selected, setSelected] = useState(initial.selectedOptionId ?? "");
   const [loading, setLoading] = useState(false);
+  const [submittingAnswer, setSubmittingAnswer] = useState(false);
   const [error, setError] = useState("");
   const [noteOpen, setNoteOpen] = useState(false);
+  const [endTestOpen, setEndTestOpen] = useState(false);
+  const [endingTest, setEndingTest] = useState(false);
   const [note, setNote] = useState(initial.privateNote ?? initialNote);
   const [noteStatus, setNoteStatus] = useState("");
   const [struck, setStruck] = useState<string[]>([]);
   const [keyInfoVisible, setKeyInfoVisible] = useState(false);
+  const [highlights, setHighlights] = useState<TextHighlight[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiStatus, setAiStatus] = useState<
     "idle" | "loading" | "ready" | "error"
@@ -69,6 +81,7 @@ export function QuestionPlayer({
   const viewedAt = useRef(Date.now());
   const completing = useRef(false);
   const expiredPosition = useRef<number | null>(null);
+  const stemRef = useRef<HTMLParagraphElement>(null);
 
   async function load(position: number) {
     if (position < 1 || position > question.total) return;
@@ -82,6 +95,7 @@ export function QuestionPlayer({
       const data = (await response.json()) as Question & { error?: string };
       if (!response.ok) throw new Error(data.error);
       setQuestion(data);
+      setHighlights(readQuestionHighlights(data.questionId, data.stem.length));
       setSelected(data.selectedOptionId ?? "");
       setNote(data.privateNote ?? "");
       setNoteStatus("");
@@ -107,6 +121,7 @@ export function QuestionPlayer({
   async function submit(optionId = selected) {
     if (!optionId || question.answered) return false;
     setLoading(true);
+    setSubmittingAnswer(true);
     setError("");
     setSelected(optionId);
     const submissionKey = crypto.randomUUID();
@@ -128,7 +143,10 @@ export function QuestionPlayer({
       );
       const data = (await response.json()) as Question & { error?: string };
       if (!response.ok) throw new Error(data.error);
-      setQuestion(data);
+      setQuestion((current) => ({
+        ...data,
+        imageUrl: data.imageUrl ?? current.imageUrl,
+      }));
       setRemaining(null);
       localStorage.removeItem(draftKey);
       return true;
@@ -139,6 +157,7 @@ export function QuestionPlayer({
       return false;
     } finally {
       setLoading(false);
+      setSubmittingAnswer(false);
     }
   }
 
@@ -165,6 +184,25 @@ export function QuestionPlayer({
       setQuestion({ ...question, marked: !next });
       setError("Mark could not be saved.");
     }
+  }
+
+  function addSelectedHighlight() {
+    const selection = window.getSelection();
+    if (!stemRef.current) return;
+    const selectedHighlight = selectedTextHighlight(stemRef.current, selection);
+    if (!selectedHighlight) return;
+    const next = normalizeHighlights(
+      [...highlights, selectedHighlight],
+      question.stem.length,
+    );
+    setHighlights(next);
+    writeQuestionHighlights(question.questionId, next);
+    selection?.removeAllRanges();
+  }
+
+  function removeAllHighlights() {
+    setHighlights([]);
+    writeQuestionHighlights(question.questionId, []);
   }
 
   async function saveNote() {
@@ -215,19 +253,10 @@ export function QuestionPlayer({
     }
   }
 
-  async function completeBlock(auto = false) {
+  async function completeBlock() {
     if (completing.current) return;
-    const unanswered = question.navigator.filter(
-      (item) => !item.answered,
-    ).length;
-    if (
-      !auto &&
-      !window.confirm(
-        `${unanswered} question${unanswered === 1 ? " is" : "s are"} unanswered. End this test?`,
-      )
-    )
-      return;
     completing.current = true;
+    setEndingTest(true);
     const response = await fetch(
       `/api/study/blocks/${question.blockId}/complete`,
       { method: "POST" },
@@ -235,6 +264,7 @@ export function QuestionPlayer({
     if (response.ok) router.push(`/study/block/${question.blockId}/results`);
     else {
       completing.current = false;
+      setEndingTest(false);
       setError("Test could not be completed. Retry.");
     }
   }
@@ -255,9 +285,15 @@ export function QuestionPlayer({
       const saved = await submit(selected);
       if (!saved) return;
     }
-    if (question.position === question.total) await completeBlock();
+    if (question.position === question.total) setEndTestOpen(true);
     else await load(question.position + 1);
   }
+
+  useEffect(() => {
+    setHighlights(
+      readQuestionHighlights(question.questionId, question.stem.length),
+    );
+  }, [question.questionId, question.stem.length]);
 
   useEffect(() => {
     const saved = localStorage.getItem(
@@ -279,7 +315,7 @@ export function QuestionPlayer({
             setError("Time expired before the selected answer was confirmed.");
           }
         }
-        if (question.position === question.total) await completeBlock(true);
+        if (question.position === question.total) await completeBlock();
         else await load(question.position + 1);
       })();
       return;
@@ -302,6 +338,13 @@ export function QuestionPlayer({
     () => question.navigator.filter((item) => item.answered).length,
     [question.navigator],
   );
+  const questionWindow = useMemo(
+    () => getPageWindow(question.position, question.total),
+    [question.position, question.total],
+  );
+  const unansweredCount = question.navigator.filter(
+    (item) => !item.answered,
+  ).length;
 
   return (
     <div className="min-h-screen bg-field pb-24">
@@ -360,7 +403,7 @@ export function QuestionPlayer({
             aria-live="polite"
           >
             <LoadingSpinner size="sm" label="Loading question" />
-            Updating question…
+            {submittingAnswer ? "Checking answer…" : "Updating question…"}
           </div>
         )}
 
@@ -373,11 +416,17 @@ export function QuestionPlayer({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="border border-line bg-white p-5 shadow-card sm:p-7"
           >
-            <p className="whitespace-pre-wrap text-lg leading-8">
+            <p
+              ref={stemRef}
+              onMouseUp={addSelectedHighlight}
+              onTouchEnd={addSelectedHighlight}
+              className="whitespace-pre-wrap text-lg leading-8 selection:bg-yellow-200"
+            >
               <HighlightedText
                 text={question.stem}
                 phrases={question.keyPhrases ?? []}
                 active={keyInfoVisible}
+                highlights={highlights}
               />
             </p>
             {question.imageUrl && (
@@ -395,6 +444,12 @@ export function QuestionPlayer({
                 active={question.marked}
                 onClick={() => void toggleMark()}
                 label={question.marked ? "★ Marked" : "☆ Mark"}
+              />
+              <ActionButton
+                active={false}
+                disabled={highlights.length === 0}
+                onClick={removeAllHighlights}
+                label="Remove all highlights"
               />
               <ActionButton
                 active={noteOpen || note.trim().length > 0}
@@ -456,11 +511,9 @@ export function QuestionPlayer({
                 const correct =
                   question.answered && question.correctOptionId === option.id;
                 const chosen = selected === option.id;
-                const explanationStyle = chosen
-                  ? correct
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-950"
-                    : "border-red-300 bg-red-50 text-red-950"
-                  : "border-slate-200 bg-slate-50 text-slate-700";
+                const explanationStyle = correct
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-950"
+                  : "border-red-300 bg-red-50 text-red-950";
                 return (
                   <div key={option.id}>
                     <label
@@ -520,20 +573,15 @@ export function QuestionPlayer({
                       )}
                     </label>
 
-                    {question.answered && question.rationales?.[option.id] && (
-                      <details
-                        key={`${question.questionId}-${option.id}-explanation`}
-                        open={chosen || undefined}
-                        className={`mt-2 rounded-lg border px-4 py-3 text-sm ${explanationStyle}`}
-                      >
-                        <summary className="cursor-pointer font-bold">
-                          Why this option is {correct ? "correct" : "incorrect"}
-                        </summary>
-                        <p className="mt-2 leading-6">
+                    {question.answered &&
+                      chosen &&
+                      question.rationales?.[option.id] && (
+                        <p
+                          className={`mt-2 border px-4 py-3 text-sm leading-6 ${explanationStyle}`}
+                        >
                           {question.rationales[option.id]}
                         </p>
-                      </details>
-                    )}
+                      )}
                   </div>
                 );
               })}
@@ -565,25 +613,57 @@ export function QuestionPlayer({
               {answeredCount}/{question.total} answered
             </span>
           </div>
-          <div className="mt-3 grid grid-cols-8 gap-2 sm:grid-cols-12">
-            {question.navigator.map((item) => (
-              <button
-                key={item.position}
-                type="button"
-                onClick={() => void load(item.position)}
-                aria-label={`Question ${item.position}${item.answered ? ", answered" : ""}${item.marked ? ", marked" : ""}`}
-                className={`min-h-11 rounded-lg text-sm font-bold ${
-                  item.position === question.position
-                    ? "bg-ink text-white"
-                    : item.answered
-                      ? "bg-brand-100 text-brand-900"
-                      : "bg-field"
-                }`}
-              >
-                {item.marked ? "★" : ""}
-                {item.position}
-              </button>
-            ))}
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              aria-label="Show previous 10 questions"
+              disabled={!questionWindow.previousWindowPage || loading}
+              onClick={() =>
+                questionWindow.previousWindowPage &&
+                void load(questionWindow.previousWindowPage)
+              }
+              className="h-11 w-11 shrink-0 border border-line text-xl font-bold disabled:opacity-30"
+            >
+              ‹
+            </button>
+            <div className="grid min-w-0 grid-cols-5 gap-2 sm:grid-cols-10">
+              {question.navigator
+                .slice(questionWindow.start - 1, questionWindow.end)
+                .map((item) => (
+                  <button
+                    key={item.position}
+                    type="button"
+                    onClick={() => void load(item.position)}
+                    disabled={loading}
+                    aria-label={`Question ${item.position}${item.answered ? ", answered" : ""}${item.marked ? ", marked" : ""}`}
+                    aria-current={
+                      item.position === question.position ? "page" : undefined
+                    }
+                    className={`h-11 min-w-9 px-2 text-sm font-bold disabled:opacity-50 ${
+                      item.position === question.position
+                        ? "bg-ink text-white"
+                        : item.answered
+                          ? "bg-brand-100 text-brand-900"
+                          : "bg-field"
+                    }`}
+                  >
+                    {item.marked ? "★" : ""}
+                    {item.position}
+                  </button>
+                ))}
+            </div>
+            <button
+              type="button"
+              aria-label="Show next 10 questions"
+              disabled={!questionWindow.nextWindowPage || loading}
+              onClick={() =>
+                questionWindow.nextWindowPage &&
+                void load(questionWindow.nextWindowPage)
+              }
+              className="h-11 w-11 shrink-0 border border-line text-xl font-bold disabled:opacity-30"
+            >
+              ›
+            </button>
           </div>
         </section>
       </main>
@@ -600,7 +680,7 @@ export function QuestionPlayer({
           </button>
           <button
             type="button"
-            onClick={() => void completeBlock()}
+            onClick={() => setEndTestOpen(true)}
             className="min-h-12 font-semibold text-red-700"
           >
             End test
@@ -621,6 +701,49 @@ export function QuestionPlayer({
           </button>
         </div>
       </nav>
+
+      {endTestOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="end-test-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        >
+          <div className="w-full max-w-md border border-line bg-white p-6 shadow-card">
+            <h2 id="end-test-title" className="text-xl font-bold text-ink">
+              Are you sure you want to end this test?
+            </h2>
+            {unansweredCount > 0 && (
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {unansweredCount} question
+                {unansweredCount === 1 ? " is" : "s are"} still unanswered.
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={endingTest}
+                onClick={() => setEndTestOpen(false)}
+                className="button-secondary min-h-11 px-5 disabled:opacity-50"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                disabled={endingTest}
+                onClick={() => void completeBlock()}
+                className="min-h-11 bg-red-700 px-5 font-bold text-white disabled:opacity-50"
+              >
+                {endingTest ? (
+                  <LoadingSpinner size="sm" label="Ending test" />
+                ) : (
+                  "Yes"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {noteOpen && (
         <div
@@ -695,32 +818,54 @@ function HighlightedText({
   text,
   phrases,
   active,
+  highlights,
 }: {
   text: string;
   phrases: string[];
   active: boolean;
+  highlights: TextHighlight[];
 }) {
-  if (!active || phrases.length === 0) return text;
-  const normalized = new Set(phrases.map((phrase) => phrase.toLowerCase()));
-  const pattern = phrases
-    .slice()
-    .sort((left, right) => right.length - left.length)
-    .map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|");
-  if (!pattern) return text;
-  return text.split(new RegExp(`(${pattern})`, "gi")).map((part, index) =>
-    normalized.has(part.toLowerCase()) ? (
+  const phraseHighlights: TextHighlight[] = [];
+  if (active && phrases.length > 0) {
+    const pattern = phrases
+      .slice()
+      .sort((left, right) => right.length - left.length)
+      .map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|");
+    if (pattern) {
+      for (const match of text.matchAll(new RegExp(pattern, "gi"))) {
+        if (match.index !== undefined) {
+          phraseHighlights.push({
+            start: match.index,
+            end: match.index + match[0].length,
+          });
+        }
+      }
+    }
+  }
+
+  const visibleHighlights = normalizeHighlights(
+    [...highlights, ...phraseHighlights],
+    text.length,
+  );
+  if (visibleHighlights.length === 0) return text;
+
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  visibleHighlights.forEach(({ start, end }) => {
+    if (start > cursor) parts.push(text.slice(cursor, start));
+    parts.push(
       <mark
-        // A phrase may appear more than once, so its occurrence index is part of the key.
-        key={`${part}-${index}`}
+        key={`${start}-${end}`}
         className="rounded bg-yellow-200 px-0.5 text-inherit"
       >
-        {part}
-      </mark>
-    ) : (
-      part
-    ),
-  );
+        {text.slice(start, end)}
+      </mark>,
+    );
+    cursor = end;
+  });
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return parts;
 }
 
 function Explanation({ question }: { question: Question }) {

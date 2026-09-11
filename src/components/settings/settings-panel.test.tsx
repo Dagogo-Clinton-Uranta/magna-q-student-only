@@ -1,6 +1,7 @@
 import React from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { SHOW_TEST_TOUR_STORAGE_KEY } from "@/lib/study/player-preferences";
 import { SettingsPanel } from "./settings-panel";
 
 describe("SettingsPanel", () => {
@@ -31,7 +32,7 @@ describe("SettingsPanel", () => {
     render(<SettingsPanel />);
 
     const toggles = screen.getAllByRole("switch");
-    expect(toggles).toHaveLength(2);
+    expect(toggles).toHaveLength(3);
     for (const toggle of toggles) {
       const track = toggle.nextElementSibling;
       expect(track?.className).toContain("settings-toggle");
@@ -39,6 +40,21 @@ describe("SettingsPanel", () => {
         "settings-toggle__thumb",
       );
     }
+  });
+
+  it("keeps the test tour off by default and persists the preference", () => {
+    render(<SettingsPanel />);
+    const testTour = screen.getByRole("switch", {
+      name: "Show tour before tests",
+    });
+
+    expect(testTour.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(testTour);
+
+    expect(testTour.getAttribute("aria-checked")).toBe("true");
+    expect(window.localStorage.getItem(SHOW_TEST_TOUR_STORAGE_KEY)).toBe(
+      "true",
+    );
   });
 
   it("places all supported study languages below dark mode", () => {

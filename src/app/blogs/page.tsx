@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { BlogCard, type BlogSummary } from "@/components/blog/blog-card";
+import { Pagination } from "@/components/ui/pagination";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 
@@ -57,36 +57,12 @@ export default async function BlogsPage({
           No articles have been published yet.
         </p>
       )}
-      {totalPages > 1 && (
-        <nav
-          aria-label="Blog pages"
-          className="mt-8 flex items-center justify-center gap-4"
-        >
-          {currentPage > 1 ? (
-            <Link
-              href={`/blogs?page=${currentPage - 1}`}
-              className="button-secondary"
-            >
-              ← Newer posts
-            </Link>
-          ) : (
-            <span />
-          )}
-          <span className="text-sm font-semibold text-slate-600">
-            Page {currentPage} of {totalPages}
-          </span>
-          {currentPage < totalPages ? (
-            <Link
-              href={`/blogs?page=${currentPage + 1}`}
-              className="button-secondary"
-            >
-              Older posts →
-            </Link>
-          ) : (
-            <span />
-          )}
-        </nav>
-      )}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        ariaLabel="Blog pages"
+        getPageHref={(page) => `/blogs?page=${page}`}
+      />
     </AppShell>
   );
 }

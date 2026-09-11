@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { ResidencyEventTable } from "@/components/resources/residency-event-table";
 import { SearchableFilter } from "@/components/resources/searchable-filter";
+import { Pagination } from "@/components/ui/pagination";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
 import {
   EVENT_FORMATS,
@@ -307,72 +308,23 @@ export default async function OpenHouseOpportunitiesPage({
         )}
       </section>
 
-      {totalPages > 1 && (
-        <nav
-          className="mt-8 flex flex-wrap items-center justify-center gap-2"
-          aria-label="Opportunity directory pages"
-        >
-          {requestedPage > 1 && (
-            <Link
-              href={eventDirectoryHref({
-                page: requestedPage - 1,
-                from,
-                to,
-                institution,
-                format,
-                location,
-                schedule,
-                sort,
-              })}
-              className={paginationLinkClassName}
-            >
-              ← Previous
-            </Link>
-          )}
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-            (page) => (
-              <Link
-                key={page}
-                href={eventDirectoryHref({
-                  page,
-                  from,
-                  to,
-                  institution,
-                  format,
-                  location,
-                  schedule,
-                  sort,
-                })}
-                aria-current={page === requestedPage ? "page" : undefined}
-                className={`flex h-11 min-w-11 items-center justify-center border px-3 font-semibold ${
-                  page === requestedPage
-                    ? "border-black bg-black text-white"
-                    : "border-line bg-white text-body"
-                }`}
-              >
-                {page}
-              </Link>
-            ),
-          )}
-          {requestedPage < totalPages && (
-            <Link
-              href={eventDirectoryHref({
-                page: requestedPage + 1,
-                from,
-                to,
-                institution,
-                format,
-                location,
-                schedule,
-                sort,
-              })}
-              className={paginationLinkClassName}
-            >
-              Next →
-            </Link>
-          )}
-        </nav>
-      )}
+      <Pagination
+        currentPage={requestedPage}
+        totalPages={totalPages}
+        ariaLabel="Opportunity directory pages"
+        getPageHref={(page) =>
+          eventDirectoryHref({
+            page,
+            from,
+            to,
+            institution,
+            format,
+            location,
+            schedule,
+            sort,
+          })
+        }
+      />
     </AppShell>
   );
 }
@@ -381,9 +333,6 @@ const filterLabelClassName =
   "text-xs font-bold uppercase tracking-wider text-slate-600";
 const filterInputClassName =
   "mt-2 h-12 w-full border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none hover:border-brand-400 focus:border-brand-700 focus:ring-2 focus:ring-brand-200";
-const paginationLinkClassName =
-  "flex h-11 items-center border border-line bg-white px-4 font-semibold text-body";
-
 function firstValue(value: SearchValue) {
   return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
 }
