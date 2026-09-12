@@ -44,7 +44,7 @@ const journey = [
     step: "4",
     title: "Navigate the Match",
     description:
-      "Understand ranking, communication, and the final steps from completed interviews to Match Day.",
+      "Understand ranking, view upcoming open days and active residency programs that sponsor visas to inform your signalling decisions, and know the final steps from completed interviews to Match Day.",
   },
 ];
 
@@ -81,8 +81,8 @@ const faqs = [
     "Magna-Q brings together USMLE preparation, residency guidance, interview practice, and Match support in one learning workspace.",
   ],
   [
-    "Can I use Magna-Q outside Africa?",
-    "Yes. The platform is designed for international medical graduates everywhere, with particular attention to the challenges of navigating an unfamiliar licensing and residency system.",
+    "Which Regions is Magna-Q available in",
+    "The platform is designed for international medical graduates everywhere, with particular attention to the challenges of navigating an unfamiliar licensing and residency system.",
   ],
   [
     "Is the educational content medical advice?",
@@ -117,8 +117,9 @@ export default async function HomePage() {
                 From your first licensing exam to the moment you match.
               </h1>
               <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-muted sm:text-xl">
-                One connected platform for exam preparation, residency guidance,
-                interview practice, and the confidence to take your next step.
+                Magna-Q is a connected platform for USMLE preparation, residency
+                and application guidance, live interview practice, and community
+                sharing, giving you confidence to perform.
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                 <Link
@@ -135,13 +136,13 @@ export default async function HomePage() {
                 </Link>
               </div>
             </Reveal>
-            <Reveal className="mt-14" delay={0.08}>
+            <Reveal className="mx-auto mt-14 w-[70%]" delay={0.08}>
               <div className="overflow-hidden border border-line bg-field shadow-lift">
                 <Image
                   src="/images/medinexus-journey-hero.png"
                   alt="An international medical graduate progressing from exam uncertainty to confident residency preparation and a successful match"
-                  width={1672}
-                  height={941}
+                  width={1672*1.3}
+                  height={941*1.3}
                   priority
                   className="h-auto w-full"
                 />
@@ -162,7 +163,7 @@ export default async function HomePage() {
               </h2>
               <p className="mt-5 text-lg leading-8 text-muted">
                 Replace scattered resources and uncertain next steps with a
-                clear, supported path from preparation to residency.
+                clear, supported pathway from USMLE Step 1 to residency.
               </p>
             </div>
           </Reveal>
@@ -199,7 +200,7 @@ export default async function HomePage() {
               </div>
             </Reveal>
             <Reveal delay={0.08}>
-              <p className="eyebrow">Clarity over overwhelm</p>
+              <p className="eyebrow">Clarity over confusion</p>
               <h2 className="mt-4 text-3xl font-normal tracking-[0.02em] text-ink sm:text-5xl">
                 Turn uncertainty into a plan you can follow.
               </h2>
@@ -210,9 +211,9 @@ export default async function HomePage() {
               </p>
               <ul className="mt-8 space-y-4">
                 {[
-                  "Focused study instead of information overload",
-                  "US clinical and residency context explained clearly",
-                  "Progress that turns into an actionable next step",
+                  "Free standardized question banks for USMLE Step 1 and Step 2",
+                  "What to do at each stage of the Match process, with residency and open-day trackers",
+                  "An active and knowledgeable community to reach out to",
                 ].map((item) => (
                   <li key={item} className="flex gap-3 text-body">
                     <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white text-sm text-brand-700">
@@ -260,13 +261,13 @@ export default async function HomePage() {
                 <div className="max-w-4xl">
                   <p className="eyebrow">Community, brought forward</p>
                   <h2 className="mt-4 text-3xl font-normal tracking-[0.02em] text-ink sm:text-5xl">
-                    Your next collaborator may already be here.
+                    Place yourself front and center within our community
                   </h2>
                   <p className="mt-5 text-lg leading-8 text-muted">
-                    At every stage of the licensing process, Magna-Q gives
-                    students and doctors a place to share meaningful work, find
-                    their people, and move from the background to the center of
-                    the community.
+                    We give students and doctors a place to share meaningful work
+                    via our Features section, find like minds, and get advice on
+                    their study plans and application process. Your next
+                    collaborator may already be here.
                   </p>
                 </div>
               </Reveal>
@@ -319,9 +320,10 @@ export default async function HomePage() {
                 Practice the moment before it matters.
               </h2>
               <p className="mt-5 text-lg leading-8 text-muted">
-                Move from knowing your story to delivering it clearly. Rehearse
-                realistic residency questions, review your recording, and arrive
-                prepared for the conversation.
+                With our interview simulation software, you can practice at your
+                own convenience, as many times as you like. Rehearse realistic
+                residency questions, review your recording, and arrive prepared
+                for the conversation.
               </p>
               <Link href="/login?as=student" className="button-primary mt-8">
                 Explore interview practice
