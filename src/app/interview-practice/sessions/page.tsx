@@ -1,14 +1,17 @@
 import Link from "next/link";
+import { InterviewCreditSummary } from "@/components/interview/interview-credit-summary";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
+import { getInterviewCreditBalance } from "@/lib/payments/interview-credits";
 import {
   interviewPracticeAreas,
   interviewQuestions,
 } from "@/lib/interview/questions";
 
 export default async function PracticeSessionsPage() {
-  const { profile } = await requirePaidStudent("/interview-practice/sessions");
+  const profile = await requireRole(["student"]);
+  const balance = await getInterviewCreditBalance(profile.id);
   return (
     <AppShell title="Practice by competency" name={profile.fullName}>
       <WorkspaceHero image="guidelines" className="mt-5">
@@ -24,6 +27,7 @@ export default async function PracticeSessionsPage() {
           specialty-relevance metadata.
         </p>
       </WorkspaceHero>
+      <InterviewCreditSummary balance={balance} />
       <section
         className="mt-7 grid gap-4 md:grid-cols-2"
         aria-label="Interview practice areas"

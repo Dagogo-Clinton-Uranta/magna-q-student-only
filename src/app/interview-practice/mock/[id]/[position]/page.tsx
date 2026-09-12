@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { InterviewRecorder } from "@/components/interview/interview-recorder";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
 import { getInterviewQuestion } from "@/lib/interview/questions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,8 +12,7 @@ export default async function ActiveMockQuestionPage({
   params: Promise<{ id: string; position: string }>;
 }) {
   const { id, position: rawPosition } = await params;
-  const returnTo = `/interview-practice/mock/${encodeURIComponent(id)}/${encodeURIComponent(rawPosition)}`;
-  const { profile } = await requirePaidStudent(returnTo);
+  const profile = await requireRole(["student"]);
   const position = Number(rawPosition);
   if (!Number.isInteger(position) || position < 0 || position > 7) notFound();
   const supabase = await createClient();

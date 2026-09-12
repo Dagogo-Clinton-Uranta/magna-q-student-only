@@ -3,14 +3,14 @@ import { z } from "zod";
 import { getInterviewQuestion } from "@/lib/interview/questions";
 import { enqueueInterviewTranscription } from "@/lib/interview/queue";
 import { verifyInterviewUpload } from "@/lib/interview/storage";
-import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
+import { getInterviewStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const access = await getPaidStudentApiAccess("/interview-practice/sessions");
+  const access = await getInterviewStudentApiAccess();
   if (!access.ok) return access.response;
   const { profile } = access;
   if (

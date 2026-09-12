@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
+import { getInterviewStudentApiAccess } from "@/lib/payments/api-access";
 import { createClient } from "@/lib/supabase/server";
 
 const MAX_LOOKBACK_MS = 24 * 60 * 60 * 1_000;
 
 export async function GET(request: Request) {
-  const access = await getPaidStudentApiAccess("/interview-practice/results");
+  const access = await getInterviewStudentApiAccess();
   if (!access.ok) return access.response;
   const requestedSince = Date.parse(
     new URL(request.url).searchParams.get("since") ?? "",

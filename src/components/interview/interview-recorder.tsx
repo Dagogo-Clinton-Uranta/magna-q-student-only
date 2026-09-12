@@ -361,8 +361,13 @@ export function InterviewRecorder({
         videoId?: string;
         uploadUrl?: string;
         resultHref?: string;
+        paywallUrl?: string;
         error?: string;
       }>(sessionResponse);
+      if (sessionResponse.status === 402 && session.paywallUrl) {
+        window.location.assign(session.paywallUrl);
+        return;
+      }
       if (!sessionResponse.ok || !session.videoId || !session.uploadUrl)
         throw new UserFacingUploadError(
           session.error ?? "Upload could not be started.",

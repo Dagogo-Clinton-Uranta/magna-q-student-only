@@ -4,7 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { CompetencyProfile } from "@/components/interview/competency-profile";
 import { DeliveryInsights } from "@/components/interview/delivery-insights";
 import { InterviewResultRefresh } from "@/components/interview/interview-result-refresh";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
 import {
   getInterviewPracticeArea,
   getInterviewQuestion,
@@ -17,8 +17,7 @@ export default async function IndividualResultPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const returnTo = `/interview-practice/results/practice/${encodeURIComponent(id)}`;
-  const { profile } = await requirePaidStudent(returnTo);
+  const profile = await requireRole(["student"]);
   const supabase = await createClient();
   const { data: result } = await supabase
     .from("interview_individual_results")

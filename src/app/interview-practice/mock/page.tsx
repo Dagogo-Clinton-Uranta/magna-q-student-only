@@ -2,10 +2,13 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { MockInterviewLauncher } from "@/components/interview/mock-interview-launcher";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { InterviewCreditSummary } from "@/components/interview/interview-credit-summary";
+import { requireRole } from "@/lib/auth/guards";
+import { getInterviewCreditBalance } from "@/lib/payments/interview-credits";
 
 export default async function MockInterviewPage() {
-  const { profile } = await requirePaidStudent("/interview-practice/mock");
+  const profile = await requireRole(["student"]);
+  const balance = await getInterviewCreditBalance(profile.id);
   return (
     <AppShell title="Mock interview" name={profile.fullName}>
       <WorkspaceHero image="guidelines" className="mt-5">
@@ -19,7 +22,8 @@ export default async function MockInterviewPage() {
           values. Coaching prompts stay hidden while the mock is active.
         </p>
       </WorkspaceHero>
-      <MockInterviewLauncher />
+      <InterviewCreditSummary balance={balance} compact />
+      <MockInterviewLauncher mockCredits={balance.mockCredits} />
       <p className="mt-5 text-sm leading-6 text-slate-600">
         Need focused preparation first?{" "}
         <Link

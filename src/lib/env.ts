@@ -27,12 +27,13 @@ const serverSchema = publicSchema.extend({
   AWS_S3_ENDPOINT: z.string().url().optional(),
   AWS_FEATURES_S3_BUCKET: z.string().min(1).optional(),
   AWS_FEATURES_S3_PUBLIC_URL: z.string().url().optional(),
-  // Stripe secrets are optional at application startup so local non-billing
-  // pages still work. Billing entry points validate the complete trio before
-  // making any Stripe API call.
+  // Stripe values are optional at application startup so non-billing pages
+  // still work. Each billing entry point validates the values it needs.
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_MONTHLY_PRICE_ID: z.string().min(1).optional(),
+  STRIPE_INTERVIEW_COMPETENCY_PACK_PRICE_ID: z.string().min(1).optional(),
+  STRIPE_INTERVIEW_MOCK_PRICE_ID: z.string().min(1).optional(),
   STRIPE_LIVE_MODE: z.enum(["true", "false"]).optional(),
   REDIS_URL: z.string().url().optional(),
 });
@@ -109,6 +110,12 @@ export function getServerEnv(): ServerEnv {
     ),
     STRIPE_MONTHLY_PRICE_ID: optionalEnvironmentValue(
       process.env.STRIPE_MONTHLY_PRICE_ID,
+    ),
+    STRIPE_INTERVIEW_COMPETENCY_PACK_PRICE_ID: optionalEnvironmentValue(
+      process.env.STRIPE_INTERVIEW_COMPETENCY_PACK_PRICE_ID,
+    ),
+    STRIPE_INTERVIEW_MOCK_PRICE_ID: optionalEnvironmentValue(
+      process.env.STRIPE_INTERVIEW_MOCK_PRICE_ID,
     ),
     STRIPE_LIVE_MODE: optionalEnvironmentValue(process.env.STRIPE_LIVE_MODE),
     REDIS_URL: optionalEnvironmentValue(process.env.REDIS_URL),

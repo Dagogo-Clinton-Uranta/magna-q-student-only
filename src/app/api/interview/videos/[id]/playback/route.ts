@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentProfile, getStudentEntitlement } from "@/lib/auth/guards";
+import { getCurrentProfile } from "@/lib/auth/guards";
 import { getInterviewVideoUrl } from "@/lib/interview/storage";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,16 +13,6 @@ export async function GET(
   if (!profile)
     return NextResponse.json({ error: "Access denied." }, { status: 403 });
   const { id } = await params;
-  if (!(await getStudentEntitlement(profile)).hasAccess)
-    return NextResponse.json(
-      {
-        error: "A current monthly subscription is required.",
-        code: "PAYMENT_REQUIRED",
-        paywallUrl:
-          "/subscription-required?returnTo=%2Finterview-practice%2Fsessions",
-      },
-      { status: 402 },
-    );
   const supabase = await createClient();
   const query = supabase
     .from("interview_videos")

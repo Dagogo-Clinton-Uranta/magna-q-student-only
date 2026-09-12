@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { getInterviewStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const runtime = "nodejs";
@@ -8,7 +8,9 @@ export const runtime = "nodejs";
 const requestSchema = z.object({ videoId: z.string().uuid() });
 
 export async function POST(request: Request) {
-  const { profile } = await requirePaidStudent("/interview-practice/sessions");
+  const access = await getInterviewStudentApiAccess();
+  if (!access.ok) return access.response;
+  const { profile } = access;
   const parsed = requestSchema.safeParse(
     await request.json().catch(() => null),
   );

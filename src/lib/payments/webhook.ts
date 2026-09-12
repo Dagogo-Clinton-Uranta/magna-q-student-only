@@ -14,6 +14,9 @@ import { stripeModeMatches } from "@/lib/payments/stripe-mode";
 import {
   getStripe,
   getStripeLiveMode,
+  getStripeInterviewPriceId,
+  interviewProductDetails,
+  type InterviewProductKind,
   getStripeMonthlyPriceId,
   MONTHLY_SUBSCRIPTION_AMOUNT_MINOR,
   MONTHLY_SUBSCRIPTION_CURRENCY,
@@ -69,6 +72,109 @@ function isUuid(value: string | null | undefined) {
 function eventObjectId(event: Stripe.Event) {
   const object = event.data.object as { id?: unknown };
   return typeof object.id === "string" ? object.id : null;
+}
+
+function interviewProductFromSession(
+  session: Stripe.Checkout.Session,
+): InterviewProductKind | null {
+  const product = session.metadata?.magna_q_interview_product;
+  return product === "competency_pack" || product === "mock_interview"
+    ? product
+    : null;
+}
+
+function isInterviewCreditSession(session: Stripe.Checkout.Session) {
+  return Boolean(session.metadata?.magna_q_purchase_id);
+}
+
+async function processInterviewCreditCheckout(
+  admin: AdminClient,
+  event: Stripe.Event,
+  eventSession: Stripe.Checkout.Session,
+): Promise<WebhookProcessingResult> {
+  const purchaseId = eventSession.metadata?.magna_q_purchase_id;
+  const userId = eventSession.metadata?.magna_q_user_id;
+  const product = interviewProductFromSession(eventSession);
+  if (!isUuid(purchaseId) || !isUuid(userId) || !product)
+    return { handled: false, ignoredReason: "invalid_interview_metadata" };
+
+  const { data: purchase, error: purchaseError } = await admin
+    .from("interview_credit_purchases")
+    .select(
+      "id,user_id,product_kind,status,credit_quantity,amount_minor,currency,stripe_price_id,stripe_checkout_session_id",
+    )
+    .eq("id", purchaseId as string)
+    .eq("user_id", userId as string)
+    .maybeSingle();
+  if (purchaseError) throw purchaseError;
+  if (!purchase)
+    return { handled: false, ignoredReason: "interview_purchase_not_found" };
+
+  const details = interviewProductDetails(product);
+  const expectedPriceId = getStripeInterviewPriceId(product);
+  const session = await getStripe().checkout.sessions.retrieve(
+    eventSession.id,
+    { expand: ["line_items"] },
+  );
+  const item = session.line_items?.data[0];
+  const valid =
+    session.mode === "payment" &&
+    session.client_reference_id === userId &&
+    session.metadata?.magna_q_purchase_id === purchaseId &&
+    session.metadata?.magna_q_user_id === userId &&
+    interviewProductFromSession(session) === product &&
+    session.line_items?.data.length === 1 &&
+    item?.quantity === 1 &&
+    item.price?.id === expectedPriceId &&
+    session.amount_total === details.amountMinor &&
+    session.currency?.toLowerCase() === "usd" &&
+    purchase.product_kind === product &&
+    Number(purchase.credit_quantity) === details.credits &&
+    Number(purchase.amount_minor) === details.amountMinor &&
+    purchase.currency === "usd" &&
+    purchase.stripe_price_id === expectedPriceId &&
+    (!purchase.stripe_checkout_session_id ||
+      purchase.stripe_checkout_session_id === session.id);
+  if (!valid)
+    return { handled: false, ignoredReason: "unexpected_interview_purchase" };
+  if (session.payment_status !== "paid")
+    return { handled: false, ignoredReason: "interview_payment_not_paid" };
+
+  const { data: granted, error: grantError } = await admin.rpc(
+    "grant_interview_credit_purchase",
+    {
+      target_purchase_id: purchaseId,
+      target_user_id: userId,
+      target_checkout_session_id: session.id,
+      target_payment_intent_id: asId(session.payment_intent),
+      target_customer_id: asId(session.customer),
+      target_event_id: event.id,
+      target_paid_at: asIsoTime(event.created),
+    },
+  );
+  if (grantError) throw grantError;
+  return granted
+    ? { handled: true }
+    : { handled: false, ignoredReason: "interview_purchase_not_granted" };
+}
+
+async function markInterviewCheckoutTerminal(
+  admin: AdminClient,
+  session: Stripe.Checkout.Session,
+  status: "expired" | "failed",
+): Promise<WebhookProcessingResult> {
+  const purchaseId = session.metadata?.magna_q_purchase_id;
+  const userId = session.metadata?.magna_q_user_id;
+  if (!isUuid(purchaseId) || !isUuid(userId))
+    return { handled: false, ignoredReason: "invalid_interview_metadata" };
+  const { error } = await admin
+    .from("interview_credit_purchases")
+    .update({ status, stripe_checkout_session_id: session.id })
+    .eq("id", purchaseId as string)
+    .eq("user_id", userId as string)
+    .eq("status", "pending");
+  if (error) throw error;
+  return { handled: true };
 }
 
 /**
@@ -700,6 +806,14 @@ export async function processStripeWebhookEvent(
     switch (event.type) {
       case "checkout.session.completed": {
         const eventSession = event.data.object;
+        if (isInterviewCreditSession(eventSession)) {
+          result = await processInterviewCreditCheckout(
+            admin,
+            event,
+            eventSession,
+          );
+          break;
+        }
         const owner = await resolveBillingOwner(
           admin,
           eventSession.metadata?.medinexus_user_id ??
@@ -748,6 +862,25 @@ export async function processStripeWebhookEvent(
         } finally {
           await releaseBillingSync(admin, owner.user_id, leaseId);
         }
+        break;
+      }
+      case "checkout.session.async_payment_succeeded": {
+        const eventSession = event.data.object;
+        result = isInterviewCreditSession(eventSession)
+          ? await processInterviewCreditCheckout(admin, event, eventSession)
+          : { handled: false, ignoredReason: "unsupported_event" };
+        break;
+      }
+      case "checkout.session.expired":
+      case "checkout.session.async_payment_failed": {
+        const eventSession = event.data.object;
+        result = isInterviewCreditSession(eventSession)
+          ? await markInterviewCheckoutTerminal(
+              admin,
+              eventSession,
+              event.type === "checkout.session.expired" ? "expired" : "failed",
+            )
+          : { handled: false, ignoredReason: "unsupported_event" };
         break;
       }
       case "invoice.paid":

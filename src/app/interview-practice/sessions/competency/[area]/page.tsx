@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
 import {
   getInterviewPracticeArea,
   interviewQuestions,
@@ -24,8 +24,7 @@ export default async function CompetencyQuestionsPage({
 }) {
   const { area: areaId } = await params;
   const query = await searchParams;
-  const returnTo = `/interview-practice/sessions/competency/${encodeURIComponent(areaId)}`;
-  const { profile } = await requirePaidStudent(returnTo);
+  const profile = await requireRole(["student"]);
   const area = getInterviewPracticeArea(areaId);
   if (!area) notFound();
   const specialty = (query.specialty ?? "all") as InterviewSpecialtyId | "all";

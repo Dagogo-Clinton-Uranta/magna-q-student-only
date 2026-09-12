@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { InterviewCreditSummary } from "@/components/interview/interview-credit-summary";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
+import { getInterviewCreditBalance } from "@/lib/payments/interview-credits";
 
 const modes = [
   {
@@ -23,7 +25,8 @@ const modes = [
 ] as const;
 
 export default async function InterviewPracticePage() {
-  const { profile } = await requirePaidStudent("/interview-practice");
+  const profile = await requireRole(["student"]);
+  const balance = await getInterviewCreditBalance(profile.id);
   return (
     <AppShell title="Interview practice" name={profile.fullName}>
       <WorkspaceHero image="journey" className="mt-6">
@@ -50,6 +53,8 @@ export default async function InterviewPracticePage() {
           who you are, how you think, and what your experiences demonstrate.
         </p>
       </WorkspaceHero>
+
+      <InterviewCreditSummary balance={balance} />
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Link href="/interview-practice/results" className="button-primary">

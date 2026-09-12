@@ -5,7 +5,7 @@ import {
   interviewSpecialties,
 } from "@/lib/interview/questions";
 import { selectMockInterviewQuestions } from "@/lib/interview/mock-selection";
-import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
+import { getInterviewStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getInterviewStorageConfig } from "@/lib/interview/storage";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -18,10 +18,21 @@ const specialtyIds = interviewSpecialties.map((specialty) => specialty.id) as [
 ];
 
 export async function POST(request: Request) {
-  const access = await getPaidStudentApiAccess("/interview-practice/mock");
+  const access = await getInterviewStudentApiAccess();
   if (!access.ok) return access.response;
-  if (!(await checkRateLimit("interview-mock-create", access.profile.id, request, 5, 3600)))
-    return NextResponse.json({ error: "Mock interview start limit reached. Please try again later." }, { status: 429 });
+  if (
+    !(await checkRateLimit(
+      "interview-mock-create",
+      access.profile.id,
+      request,
+      5,
+      3600,
+    ))
+  )
+    return NextResponse.json(
+      { error: "Mock interview start limit reached. Please try again later." },
+      { status: 429 },
+    );
   if (
     !getInterviewStorageConfig() ||
     !process.env.REDIS_URL ||
@@ -48,24 +59,36 @@ export async function POST(request: Request) {
     questions: interviewQuestions,
     specialty: parsed.data.specialty,
   });
-  const { data, error } = await createServiceRoleClient()
-    .from("interview_mock_sessions")
-    .insert({
-      user_id: access.profile.id,
-      specialty: parsed.data.specialty,
-      selected_question_ids: selected.map((question) => question.id),
-      status: "in_progress",
-      current_question_index: 0,
-    })
-    .select("id")
-    .single();
-  if (error || !data)
+  const sessionId = crypto.randomUUID();
+  const { data, error } = await createServiceRoleClient().rpc(
+    "create_billed_mock_interview",
+    {
+      target_session_id: sessionId,
+      target_user_id: access.profile.id,
+      target_specialty: parsed.data.specialty,
+      target_question_ids: selected.map((question) => question.id),
+    },
+  );
+  if (error)
     return NextResponse.json(
       { error: "The mock interview could not be started." },
       { status: 500 },
     );
+  const credit = data as { allowed?: boolean; mock_remaining?: number } | null;
+  if (!credit?.allowed)
+    return NextResponse.json(
+      {
+        error:
+          "A $5 mock interview credit is required to begin this eight-question session.",
+        code: "INTERVIEW_CREDIT_REQUIRED",
+        paywallUrl:
+          "/interview-practice/credits?product=mock_interview&returnTo=%2Finterview-practice%2Fmock",
+      },
+      { status: 402 },
+    );
   return NextResponse.json({
-    sessionId: data.id,
-    href: `/interview-practice/mock/${data.id}/0`,
+    sessionId,
+    href: `/interview-practice/mock/${sessionId}/0`,
+    mockCreditsRemaining: credit.mock_remaining ?? 0,
   });
 }

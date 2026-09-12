@@ -3,7 +3,7 @@ import {
   enqueueInterviewEvaluation,
   enqueueInterviewTranscription,
 } from "@/lib/interview/queue";
-import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
+import { getInterviewStudentApiAccess } from "@/lib/payments/api-access";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
@@ -12,7 +12,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const access = await getPaidStudentApiAccess("/interview-practice/results");
+  const access = await getInterviewStudentApiAccess();
   if (!access.ok) return access.response;
   const { data: answer } = await (
     await createClient()

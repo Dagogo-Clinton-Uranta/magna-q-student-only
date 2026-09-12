@@ -2,12 +2,12 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { InterviewResultRefresh } from "@/components/interview/interview-result-refresh";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
 import { getInterviewPracticeArea } from "@/lib/interview/questions";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function InterviewResultsPage() {
-  const { profile } = await requirePaidStudent("/interview-practice/results");
+  const profile = await requireRole(["student"]);
   const supabase = await createClient();
   const [
     { data: mocks },

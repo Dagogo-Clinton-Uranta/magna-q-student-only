@@ -5,7 +5,7 @@ import {
   getInterviewQuestion,
 } from "@/lib/interview/questions";
 import { createInterviewUploadUrl } from "@/lib/interview/storage";
-import { getPaidStudentApiAccess } from "@/lib/payments/api-access";
+import { getInterviewStudentApiAccess } from "@/lib/payments/api-access";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
@@ -48,7 +48,7 @@ const sessionSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const access = await getPaidStudentApiAccess("/interview-practice/sessions");
+  const access = await getInterviewStudentApiAccess();
   if (!access.ok) return access.response;
   const { profile } = access;
   if (
@@ -132,36 +132,59 @@ export async function POST(request: Request) {
     );
 
   const db = createServiceRoleClient();
-  // Paid access and the allow-listed interview question were validated above.
+  // Student access and the allow-listed interview question were validated above.
   // Keep INSERT server-only so students cannot forge lifecycle, storage, or AI
   // fields through the Data API; every protected value is fixed by this route.
-  const { error } = await db.from("interview_videos").insert({
-    id,
-    user_id: profile.id,
-    category: category.title,
-    question_answered: parsed.data.question,
-    mime_type: parsed.data.mimeType,
-    duration_seconds: parsed.data.durationSeconds,
-    width: parsed.data.width,
-    height: parsed.data.height,
-    byte_size: parsed.data.byteSize,
-    s3_bucket: upload.bucket,
-    s3_key: key,
-    multipart_upload_id: null,
-    recording_metadata: {
-      ...parsed.data.metadata,
-      storage: "cloudflare-r2",
+  const { data: reservation, error } = await db.rpc(
+    "create_billed_interview_video",
+    {
+      target_video_id: id,
+      target_user_id: profile.id,
+      target_category: category.title,
+      target_question: parsed.data.question,
+      target_mime_type: parsed.data.mimeType,
+      target_duration_seconds: parsed.data.durationSeconds,
+      target_width: parsed.data.width,
+      target_height: parsed.data.height,
+      target_byte_size: parsed.data.byteSize,
+      target_s3_bucket: upload.bucket,
+      target_s3_key: key,
+      target_recording_metadata: {
+        ...parsed.data.metadata,
+        storage: "cloudflare-r2",
+      },
+      target_question_id: parsed.data.questionId ?? null,
+      target_mock_session_id: parsed.data.mockSessionId ?? null,
+      target_mock_position: parsed.data.mockPosition ?? null,
     },
-    status: "uploading",
-    question_id: parsed.data.questionId ?? null,
-    mock_session_id: parsed.data.mockSessionId ?? null,
-    mock_position: parsed.data.mockPosition ?? null,
-    individual_result_id: null,
-  });
+  );
   if (error) {
     return NextResponse.json(
       { error: "Could not save the upload session." },
       { status: 500 },
+    );
+  }
+  const credit = reservation as {
+    allowed?: boolean;
+    reason?: string;
+    free_remaining?: number;
+    paid_remaining?: number;
+  } | null;
+  if (!credit?.allowed) {
+    if (credit?.reason === "mock_not_current")
+      return NextResponse.json(
+        { error: "This mock interview question is no longer active." },
+        { status: 409 },
+      );
+    return NextResponse.json(
+      {
+        error:
+          "Your three free interview analyses have been used. Purchase a 10-video pack to continue.",
+        code: "INTERVIEW_CREDIT_REQUIRED",
+        paywallUrl:
+          "/interview-practice/credits?product=competency_pack&returnTo=%2Finterview-practice%2Fsessions",
+      },
+      { status: 402 },
     );
   }
   return NextResponse.json({
@@ -172,5 +195,9 @@ export async function POST(request: Request) {
       : null,
     storageConfigured: true,
     uploadUrl: upload.uploadUrl,
+    credits: {
+      freeRemaining: credit.free_remaining ?? 0,
+      competencyCredits: credit.paid_remaining ?? 0,
+    },
   });
 }

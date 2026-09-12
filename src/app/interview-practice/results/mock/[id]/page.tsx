@@ -5,7 +5,7 @@ import { CompetencyProfile } from "@/components/interview/competency-profile";
 import { DeliveryInsights } from "@/components/interview/delivery-insights";
 import { InterviewResultRefresh } from "@/components/interview/interview-result-refresh";
 import { ProcessingRetry } from "@/components/interview/processing-retry";
-import { requirePaidStudent } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
 import {
   getInterviewPracticeArea,
   getInterviewQuestion,
@@ -18,8 +18,7 @@ export default async function FullMockResultPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const returnTo = `/interview-practice/results/mock/${encodeURIComponent(id)}`;
-  const { profile } = await requirePaidStudent(returnTo);
+  const profile = await requireRole(["student"]);
   const supabase = await createClient();
   const { data: session } = await supabase
     .from("interview_mock_sessions")

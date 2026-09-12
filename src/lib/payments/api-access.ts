@@ -45,3 +45,25 @@ export async function getPaidStudentApiAccess(returnTo: string) {
 
   return { ok: true as const, profile, entitlement };
 }
+
+/** Authenticates interview APIs; consumable credits are enforced at creation. */
+export async function getInterviewStudentApiAccess() {
+  const profile = await getCurrentProfile();
+  if (!profile)
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: "Authentication required." },
+        { status: 401 },
+      ),
+    };
+  if (profile.role !== "student")
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: "Student role required." },
+        { status: 403 },
+      ),
+    };
+  return { ok: true as const, profile };
+}

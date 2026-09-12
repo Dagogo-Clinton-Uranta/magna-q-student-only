@@ -9,6 +9,13 @@ import {
 /** The subscription price promised in the product UI, stored in minor units. */
 export const MONTHLY_SUBSCRIPTION_AMOUNT_MINOR = 10_000;
 export const MONTHLY_SUBSCRIPTION_CURRENCY = "usd";
+export const INTERVIEW_COMPETENCY_PACK_AMOUNT_MINOR = 1_000;
+export const INTERVIEW_COMPETENCY_PACK_CREDITS = 10;
+export const INTERVIEW_MOCK_AMOUNT_MINOR = 500;
+export const INTERVIEW_MOCK_CREDITS = 1;
+export const INTERVIEW_PAYMENT_CURRENCY = "usd";
+
+export type InterviewProductKind = "competency_pack" | "mock_interview";
 
 function requiredStripeEnvironment(name: string) {
   const value = process.env[name]?.trim();
@@ -26,6 +33,14 @@ function requiredStripeEnvironment(name: string) {
  */
 export function getStripeMonthlyPriceId() {
   return requiredStripeEnvironment("STRIPE_MONTHLY_PRICE_ID");
+}
+
+export function getStripeInterviewPriceId(product: InterviewProductKind) {
+  return requiredStripeEnvironment(
+    product === "competency_pack"
+      ? "STRIPE_INTERVIEW_COMPETENCY_PACK_PRICE_ID"
+      : "STRIPE_INTERVIEW_MOCK_PRICE_ID",
+  );
 }
 
 /**
@@ -83,5 +98,44 @@ export async function verifyMonthlyStripePrice(stripe = getStripe()) {
       "STRIPE_MONTHLY_PRICE_ID must point to an active $100 USD monthly recurring Price.",
     );
 
+  return price;
+}
+
+export function interviewProductDetails(product: InterviewProductKind) {
+  return product === "competency_pack"
+    ? {
+        amountMinor: INTERVIEW_COMPETENCY_PACK_AMOUNT_MINOR,
+        credits: INTERVIEW_COMPETENCY_PACK_CREDITS,
+        description: "10 competency practice videos and analyses",
+      }
+    : {
+        amountMinor: INTERVIEW_MOCK_AMOUNT_MINOR,
+        credits: INTERVIEW_MOCK_CREDITS,
+        description: "One 8-question mock interview and analysis",
+      };
+}
+
+/** Validates that the configured interview Price is the promised one-time item. */
+export async function verifyInterviewStripePrice(
+  product: InterviewProductKind,
+  stripe = getStripe(),
+) {
+  const priceId = getStripeInterviewPriceId(product);
+  const details = interviewProductDetails(product);
+  const price = await stripe.prices.retrieve(priceId);
+  const valid =
+    !price.deleted &&
+    stripeModeMatches(price.livemode, getStripeLiveMode()) &&
+    price.active &&
+    price.type === "one_time" &&
+    price.billing_scheme === "per_unit" &&
+    price.currency.toLowerCase() === INTERVIEW_PAYMENT_CURRENCY &&
+    price.unit_amount === details.amountMinor &&
+    price.recurring == null &&
+    price.transform_quantity == null;
+  if (!valid)
+    throw new Error(
+      `${product === "competency_pack" ? "STRIPE_INTERVIEW_COMPETENCY_PACK_PRICE_ID" : "STRIPE_INTERVIEW_MOCK_PRICE_ID"} must point to the matching active one-time USD Price.`,
+    );
   return price;
 }

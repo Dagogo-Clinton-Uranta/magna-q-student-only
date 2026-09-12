@@ -10,7 +10,7 @@ import { sanitizeReturnPath } from "@/lib/payments/return-path";
 
 export const metadata: Metadata = {
   title: "Student subscription | Magna-Q",
-  description: "Subscribe for practice tests, interview practice, and chat.",
+  description: "Subscribe for practice tests, residency guidance, and chat.",
 };
 
 export default async function SubscribePage({
@@ -48,8 +48,8 @@ export default async function SubscribePage({
             />
             <Feature
               index="2"
-              title="Video interviews"
-              detail="Record and review residency interview practice."
+              title="Residency guidance"
+              detail="Use residency planning resources and trackers."
             />
             <Feature
               index="3"
