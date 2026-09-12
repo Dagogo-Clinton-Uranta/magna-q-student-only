@@ -1,26 +1,39 @@
 "use client";
 
 import React, { useEffect, useState, useTransition } from "react";
-import { updatePreferredLocale } from "@/app/settings/actions";
+import {
+  updatePreferredLocale,
+  updateSidebarTourCompleted,
+} from "@/app/settings/actions";
 import { useI18n } from "@/components/i18n/i18n-provider";
 import { LOCALE_OPTIONS, type AppLocale } from "@/lib/i18n/config";
+import {
+  SIDEBAR_TOUR_COMPLETE_EVENT,
+  SIDEBAR_TOUR_START_EVENT,
+  sidebarTourStorageKey,
+} from "@/lib/onboarding/sidebar-tour";
 import { SHOW_TEST_TOUR_STORAGE_KEY } from "@/lib/study/player-preferences";
 
 const THEME_STORAGE_KEY = "magna-q-theme";
 
 export function SettingsPanel({
   initialLocale = "en",
+  userId = "anonymous",
 }: {
   initialLocale?: AppLocale;
+  userId?: string;
 }) {
   const [darkMode, setDarkMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [showTestTour, setShowTestTour] = useState(false);
+  const [showSidebarTour, setShowSidebarTour] = useState(false);
+  const [sidebarTourError, setSidebarTourError] = useState(false);
   const [selectedLocale, setSelectedLocale] = useState(initialLocale);
   const [languageStatus, setLanguageStatus] = useState<
     "idle" | "saved" | "error"
   >("idle");
   const [isSavingLanguage, startLanguageTransition] = useTransition();
+  const [isStartingSidebarTour, startSidebarTourTransition] = useTransition();
   const { setLocale, t } = useI18n();
 
   useEffect(() => {
@@ -30,6 +43,13 @@ export function SettingsPanel({
     );
     setLocale(initialLocale);
     document.documentElement.lang = initialLocale;
+    const handleTourComplete = () => setShowSidebarTour(false);
+    window.addEventListener(SIDEBAR_TOUR_COMPLETE_EVENT, handleTourComplete);
+    return () =>
+      window.removeEventListener(
+        SIDEBAR_TOUR_COMPLETE_EVENT,
+        handleTourComplete,
+      );
   }, [initialLocale, setLocale]);
 
   function setDarkModePreference(enabled: boolean) {
@@ -41,6 +61,25 @@ export function SettingsPanel({
   function setTestTourPreference(enabled: boolean) {
     window.localStorage.setItem(SHOW_TEST_TOUR_STORAGE_KEY, String(enabled));
     setShowTestTour(enabled);
+  }
+
+  function setSidebarTourPreference(enabled: boolean) {
+    if (!enabled) {
+      setShowSidebarTour(false);
+      return;
+    }
+    setShowSidebarTour(true);
+    setSidebarTourError(false);
+    startSidebarTourTransition(async () => {
+      const result = await updateSidebarTourCompleted(false);
+      if (!result.ok) {
+        setShowSidebarTour(false);
+        setSidebarTourError(true);
+        return;
+      }
+      window.localStorage.removeItem(sidebarTourStorageKey(userId));
+      window.dispatchEvent(new Event(SIDEBAR_TOUR_START_EVENT));
+    });
   }
 
   function setLanguagePreference(locale: AppLocale) {
@@ -90,6 +129,20 @@ export function SettingsPanel({
           checked={showTestTour}
           onCheckedChange={setTestTourPreference}
         />
+        <div>
+          <SettingRow
+            title={t("settings.showSidebarTour")}
+            description={t("settings.showSidebarTourDescription")}
+            checked={showSidebarTour}
+            disabled={isStartingSidebarTour}
+            onCheckedChange={setSidebarTourPreference}
+          />
+          {sidebarTourError && (
+            <p role="status" className="px-6 pb-5 text-xs text-red-700 sm:px-8">
+              {t("settings.sidebarTourError")}
+            </p>
+          )}
+        </div>
         <div className="p-6 sm:p-8">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
@@ -158,11 +211,13 @@ function SettingRow({
   description,
   checked,
   onCheckedChange,
+  disabled = false,
 }: {
   title: string;
   description: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-5 p-6 sm:p-8">
@@ -170,11 +225,16 @@ function SettingRow({
         <h3 className="text-base text-ink">{title}</h3>
         <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
       </div>
-      <label className="relative block h-7 w-12 shrink-0 cursor-pointer">
+      <label
+        className={`relative block h-7 w-12 shrink-0 ${
+          disabled ? "cursor-wait opacity-60" : "cursor-pointer"
+        }`}
+      >
         <input
           type="checkbox"
           role="switch"
           checked={checked}
+          disabled={disabled}
           aria-checked={checked}
           aria-label={title}
           onChange={(event) => onCheckedChange(event.currentTarget.checked)}

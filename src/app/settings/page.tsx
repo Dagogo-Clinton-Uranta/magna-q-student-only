@@ -14,7 +14,10 @@ export default async function SettingsPage() {
       title={translate(profile.preferredLocale, "settings.pageTitle")}
       name={profile.fullName}
     >
-      <SettingsPanel initialLocale={profile.preferredLocale} />
+      <SettingsPanel
+        initialLocale={profile.preferredLocale}
+        userId={profile.id}
+      />
     </AppShell>
   );
 }

@@ -202,7 +202,7 @@ export default async function HomePage() {
             <Reveal delay={0.08}>
               <p className="eyebrow">Clarity over confusion</p>
               <h2 className="mt-4 text-3xl font-normal tracking-[0.02em] text-ink sm:text-5xl">
-                Turn uncertainty into a plan you can follow.
+                Develop a clear, structured plan of action here.
               </h2>
               <p className="mt-5 text-lg leading-8 text-body">
                 International graduates are often expected to piece together

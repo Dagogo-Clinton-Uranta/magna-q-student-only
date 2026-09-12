@@ -19,6 +19,7 @@ export type CurrentProfile = {
   targetExam: "step1" | "step2ck" | "step3";
   monthlyPayment: "paid" | "unpaid";
   preferredLocale: AppLocale;
+  sidebarTourCompleted: boolean;
 };
 
 export type StudentEntitlement = {
@@ -49,6 +50,7 @@ export const getCurrentProfile = cache(
         // weakening normal production accounts.
         monthlyPayment: "paid",
         preferredLocale: "en",
+        sidebarTourCompleted: true,
       };
     }
     const user = await getCurrentUser();
@@ -57,7 +59,7 @@ export const getCurrentProfile = cache(
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, username, full_name, role, onboarding_completed, study_stage, target_exam, monthly_payment, preferred_locale",
+        "id, username, full_name, role, onboarding_completed, study_stage, target_exam, monthly_payment, preferred_locale, sidebar_tour_completed",
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -72,6 +74,7 @@ export const getCurrentProfile = cache(
       targetExam: data.target_exam as CurrentProfile["targetExam"],
       monthlyPayment: data.monthly_payment as CurrentProfile["monthlyPayment"],
       preferredLocale: normalizeLocale(data.preferred_locale),
+      sidebarTourCompleted: data.sidebar_tour_completed as boolean,
     };
   },
 );

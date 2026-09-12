@@ -20,7 +20,11 @@ export async function AppShell({
   return (
     <div className="min-h-screen pb-24 lg:pb-0 lg:pl-72">
       <InterviewCompletionToasts />
-      <SidebarNav stage={profile?.studyStage ?? null} />
+      <SidebarNav
+        stage={profile?.studyStage ?? null}
+        userId={profile?.id ?? "anonymous"}
+        initialTourCompleted={profile?.sidebarTourCompleted ?? true}
+      />
       <header className="sticky top-0 z-20 border-b border-line/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="lg:hidden">

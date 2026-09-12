@@ -32,6 +32,23 @@ export async function updatePreferredLocale(value: string) {
   return { ok: true as const, locale: value };
 }
 
+export async function updateSidebarTourCompleted(completed: boolean) {
+  const profile = await requireOnboardedProfile();
+  if (profile.id !== "demo-student") {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ sidebar_tour_completed: completed })
+      .eq("id", profile.id);
+    if (error) {
+      return { ok: false as const, error: "Could not save tour preference." };
+    }
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true as const };
+}
+
 async function writeLocaleCookie(locale: AppLocale) {
   (await cookies()).set(LOCALE_COOKIE_NAME, locale, {
     httpOnly: true,

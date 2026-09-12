@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { useI18n } from "@/components/i18n/i18n-provider";
+import { SidebarTour } from "@/components/layout/sidebar-tour";
 import type { MessageKey } from "@/lib/i18n/messages";
 import type { StudentStage } from "@/lib/stages";
 
@@ -55,7 +56,15 @@ const navigationMessageKeys: Readonly<Record<string, MessageKey>> = {
   Settings: "nav.settings",
 };
 
-export function SidebarNav({ stage }: { stage: StudentStage | null }) {
+export function SidebarNav({
+  stage,
+  userId,
+  initialTourCompleted,
+}: {
+  stage: StudentStage | null;
+  userId: string;
+  initialTourCompleted: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useI18n();
@@ -99,6 +108,7 @@ export function SidebarNav({ stage }: { stage: StudentStage | null }) {
               <Link
                 key={item.href}
                 href={item.href}
+                data-sidebar-tour-id={item.href}
                 prefetch
                 aria-current={active ? "page" : undefined}
                 className={`flex min-h-11 items-center gap-3 px-3 text-xs font-normal uppercase tracking-[0.08em] transition ${active ? "border-l-2 border-brand-600 bg-soft text-black" : "border-l-2 border-transparent text-muted hover:bg-field hover:text-black"}`}
@@ -124,6 +134,7 @@ export function SidebarNav({ stage }: { stage: StudentStage | null }) {
             <Link
               key={item.href}
               href={item.href}
+              data-sidebar-tour-id={item.href}
               prefetch
               aria-current={active ? "page" : undefined}
               className={`flex min-h-[4.5rem] min-w-[4.6rem] flex-1 flex-col items-center justify-center gap-1 px-1 text-center text-[9px] font-normal uppercase tracking-[0.06em] ${active ? "text-brand-700" : "text-muted"}`}
@@ -138,6 +149,14 @@ export function SidebarNav({ stage }: { stage: StudentStage | null }) {
           );
         })}
       </nav>
+      <SidebarTour
+        items={items.map((item) => ({
+          href: item.href,
+          title: t(navigationMessageKeys[item.label] ?? "nav.overview"),
+        }))}
+        userId={userId}
+        initialCompleted={initialTourCompleted}
+      />
     </>
   );
 }
