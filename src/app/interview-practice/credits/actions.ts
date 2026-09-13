@@ -21,6 +21,50 @@ function stripeId(value: string | { id: string } | null | undefined) {
   return typeof value === "string" ? value : value.id;
 }
 
+type CheckoutStage =
+  | "stripe_client"
+  | "price_validation"
+  | "purchase_record"
+  | "app_url"
+  | "customer_lookup"
+  | "checkout_creation"
+  | "checkout_recording";
+
+function safeCheckoutError(error: unknown, stage: CheckoutStage) {
+  const detail = error instanceof Error ? error.message : "";
+  const providerCode =
+    typeof error === "object" && error && "code" in error
+      ? String(error.code)
+      : "";
+  const providerType =
+    typeof error === "object" && error && "type" in error
+      ? String(error.type)
+      : "";
+
+  if (detail.includes("STRIPE_SECRET_KEY is required"))
+    return "Stripe is not configured on this deployment: STRIPE_SECRET_KEY is missing.";
+  if (detail.includes("STRIPE_INTERVIEW_MOCK_PRICE_ID is required"))
+    return "The live $5 mock-interview Price ID is missing from this deployment.";
+  if (detail.includes("STRIPE_INTERVIEW_COMPETENCY_PACK_PRICE_ID is required"))
+    return "The live $10 competency-pack Price ID is missing from this deployment.";
+  if (detail.includes("STRIPE_LIVE_MODE must be explicitly set"))
+    return "STRIPE_LIVE_MODE must be set to true for live Stripe payments.";
+  if (providerCode === "resource_missing" || detail.includes("No such price"))
+    return "Stripe could not find that Price with the configured key. Use the live price_ ID with the live sk_live_ key.";
+  if (
+    providerType === "StripeAuthenticationError" ||
+    detail.toLowerCase().includes("invalid api key")
+  )
+    return "Stripe rejected the configured secret key. Replace STRIPE_SECRET_KEY with the live sk_live_ key.";
+  if (detail.includes("must point to the matching active one-time USD Price"))
+    return "The configured Stripe Price must be active, one-time, and exactly $5 USD for a mock or $10 USD for a competency pack.";
+  if (detail.includes("NEXT_PUBLIC_APP_URL is not configured"))
+    return "NEXT_PUBLIC_APP_URL is missing. Set it to https://www.magna-q.com and redeploy.";
+  if (stage === "purchase_record" || stage === "customer_lookup")
+    return "The interview billing database could not be reached. Check the Supabase service-role configuration.";
+  return "Stripe Checkout could not be created. Review the Vercel function log for the INTERVIEW_CHECKOUT_FAILED entry.";
+}
+
 export async function createInterviewCreditCheckout(formData: FormData) {
   const profile = await requireRole(["student"]);
   const user = await requireUser();
@@ -38,11 +82,14 @@ export async function createInterviewCreditCheckout(formData: FormData) {
 
   const purchaseId = crypto.randomUUID();
   const details = interviewProductDetails(product);
-  const service = createServiceRoleClient();
+  let stage: CheckoutStage = "stripe_client";
   try {
     const stripe = getStripe();
+    stage = "price_validation";
     await verifyInterviewStripePrice(product, stripe);
     const priceId = getStripeInterviewPriceId(product);
+    stage = "purchase_record";
+    const service = createServiceRoleClient();
     const { error: purchaseError } = await service
       .from("interview_credit_purchases")
       .insert({
@@ -57,8 +104,10 @@ export async function createInterviewCreditCheckout(formData: FormData) {
       });
     if (purchaseError) throw purchaseError;
 
+    stage = "app_url";
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
     if (!baseUrl) throw new Error("NEXT_PUBLIC_APP_URL is not configured.");
+    stage = "customer_lookup";
     const { data: billing } = await service
       .from("billing_subscriptions")
       .select("stripe_customer_id")
@@ -77,13 +126,13 @@ export async function createInterviewCreditCheckout(formData: FormData) {
     cancelUrl.searchParams.set("returnTo", returnTo);
     cancelUrl.searchParams.set("canceled", "1");
 
+    stage = "checkout_creation";
     const session = await stripe.checkout.sessions.create(
       {
         mode: "payment",
         client_reference_id: profile.id,
         line_items: [{ price: priceId, quantity: 1 }],
         billing_address_collection: "required",
-        payment_method_collection: "always",
         success_url: successUrl.toString(),
         cancel_url: cancelUrl.toString(),
         metadata,
@@ -100,6 +149,7 @@ export async function createInterviewCreditCheckout(formData: FormData) {
       },
       { idempotencyKey: `interview-credit:${profile.id}:${purchaseId}` },
     );
+    stage = "checkout_recording";
     const { error: recordError } = await service
       .from("interview_credit_purchases")
       .update({
@@ -117,13 +167,19 @@ export async function createInterviewCreditCheckout(formData: FormData) {
       (error as Error & { digest?: string }).digest?.startsWith("NEXT_REDIRECT")
     )
       throw error;
-    console.error("Interview credit Checkout creation failed", {
+    const providerCode =
+      typeof error === "object" && error && "code" in error
+        ? String(error.code)
+        : null;
+    console.error("INTERVIEW_CHECKOUT_FAILED", {
       userId: profile.id,
       product,
+      stage,
+      providerCode,
       error: error instanceof Error ? error.message : "Unknown error",
     });
     redirect(
-      `/interview-practice/credits?product=${product}&returnTo=${encodeURIComponent(returnTo)}&error=${encodeURIComponent("We could not open secure checkout. Check the Stripe setup or try again.")}`,
+      `/interview-practice/credits?product=${product}&returnTo=${encodeURIComponent(returnTo)}&error=${encodeURIComponent(safeCheckoutError(error, stage))}`,
     );
   }
 }
