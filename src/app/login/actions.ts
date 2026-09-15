@@ -23,6 +23,20 @@ function authError(message: string, mode: "login" | "signup"): never {
   redirect(`/login?mode=${mode}&error=${encodeURIComponent(message)}`);
 }
 
+function captchaToken(formData: FormData, mode: "login" | "signup") {
+  if (!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim()) return undefined;
+
+  const token = formData.get("cf-turnstile-response");
+  if (typeof token !== "string" || token.length === 0 || token.length > 2048) {
+    authError("Complete the human verification and try again.", mode);
+  }
+  return token;
+}
+
+function isCaptchaError(error: { code?: string } | null) {
+  return error?.code === "captcha_failed";
+}
+
 function parseCredentials(formData: FormData, mode: "login" | "signup") {
   const parsed = authCredentialsSchema.safeParse({
     email: formData.get("email"),
@@ -44,12 +58,16 @@ function signupProxyPlatform() {
 }
 
 export async function signInWithPassword(formData: FormData) {
+  const captcha = captchaToken(formData, "login");
   const credentials = parseCredentials(formData, "login");
   const supabase = await createClient();
   const { data: authData, error } = await supabase.auth.signInWithPassword({
     email: credentials.email,
     password: credentials.password,
+    options: { captchaToken: captcha },
   });
+  if (isCaptchaError(error))
+    authError("Human verification failed. Please try again.", "login");
   if (error) authError("The email or password is incorrect.", "login");
   const { data: profile } = await supabase
     .from("profiles")
@@ -65,6 +83,7 @@ export async function signInWithPassword(formData: FormData) {
 }
 
 export async function signUpWithPassword(formData: FormData) {
+  const captcha = captchaToken(formData, "signup");
   const registration = studentRegistrationSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -124,6 +143,7 @@ export async function signUpWithPassword(formData: FormData) {
     .signUp({
       email: credentials.email,
       password: credentials.password,
+      options: { captchaToken: captcha },
     })
     .catch(async () => {
       const release = await releaseSignupSlot(clientIp);
@@ -142,6 +162,8 @@ export async function signUpWithPassword(formData: FormData) {
       if (!release.released)
         logEvent("signup_ip_limit_error", { operation: "release" });
     }
+    if (signupResult && isCaptchaError(signupResult.error))
+      authError("Human verification failed. Please try again.", "signup");
     authError(
       "We could not create the account. The email may already be registered.",
       "signup",

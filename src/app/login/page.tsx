@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth/guards";
 import { DEMO_AUTH_BYPASS_ENABLED } from "@/lib/auth/demo";
 import { PasswordInput } from "@/components/auth/password-input";
+import { TurnstileWidget } from "@/components/auth/turnstile-widget";
 import { UsernameInput } from "@/components/auth/username-input";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { COUNTRIES } from "@/lib/countries";
@@ -31,6 +32,7 @@ export default async function LoginPage({
   const params = await searchParams;
   const isSignup = !DEMO_AUTH_BYPASS_ENABLED && params.mode === "signup";
   const isStudentRegistration = isSignup;
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
       <section className="hidden border-r border-brand-200 bg-soft p-12 text-ink lg:flex lg:flex-col lg:justify-between">
@@ -273,6 +275,13 @@ export default async function LoginPage({
                     </span>
                   </label>
                 </>
+              )}
+              {turnstileSiteKey && (
+                <TurnstileWidget
+                  key={isSignup ? "signup" : "login"}
+                  siteKey={turnstileSiteKey}
+                  action={isSignup ? "signup" : "login"}
+                />
               )}
               <FormSubmitButton
                 pendingLabel={isSignup ? "Creating account…" : "Signing in…"}
