@@ -348,7 +348,7 @@ export function QuestionPlayer({
 
   return (
     <div className="min-h-screen bg-field pb-24">
-      <header className="sticky top-0 z-20 border-b border-line bg-white">
+      <header className="sticky top-[30px] z-20 border-b border-line bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-brand-700">

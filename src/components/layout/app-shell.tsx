@@ -25,7 +25,7 @@ export async function AppShell({
         userId={profile?.id ?? "anonymous"}
         initialTourCompleted={profile?.sidebarTourCompleted ?? true}
       />
-      <header className="sticky top-0 z-20 border-b border-line/80 bg-white/90 backdrop-blur-xl">
+      <header className="sticky top-[30px] z-20 border-b border-line/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="lg:hidden">
             <BrandMark href="/dashboard" />

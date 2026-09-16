@@ -97,7 +97,7 @@ export function SidebarNav({
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto border-r border-slate-200 bg-white px-4 py-6 lg:block">
+      <aside className="fixed bottom-0 left-0 top-[30px] z-30 hidden w-72 overflow-y-auto border-r border-slate-200 bg-white px-4 py-6 lg:block">
         <div className="px-2">
           <BrandMark href="/dashboard" />
         </div>

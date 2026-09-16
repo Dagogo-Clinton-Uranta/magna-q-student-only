@@ -229,6 +229,25 @@ html.dark {
   }
 }
 
+@keyframes announcement-banner-scroll {
+  from {
+    transform: translateX(100vw);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.announcement-banner-track {
+  animation: announcement-banner-scroll 28s linear infinite;
+}
+
+@media (min-width: 1280px) {
+  .announcement-banner-track {
+    animation: none;
+  }
+}
+
 .feature-pulse-beat {
   display: inline-flex;
   transform-origin: center;
