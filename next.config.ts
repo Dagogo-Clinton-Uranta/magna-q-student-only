@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig = {
+  serverExternalPackages: ["ws"],
   images: {
     remotePatterns: [
       {
