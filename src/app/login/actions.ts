@@ -100,7 +100,7 @@ export async function signUpWithPassword(formData: FormData) {
   });
   if (!registration.success) {
     authError(
-      "Review your registration details, phone number, and acceptance of the terms.",
+      "Complete all required fields, including username, email, first name, last name, and phone number, then accept the terms.",
       "signup",
     );
   }

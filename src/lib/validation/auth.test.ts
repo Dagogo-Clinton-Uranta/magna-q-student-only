@@ -8,6 +8,19 @@ import {
 } from "./auth";
 
 describe("authentication validation", () => {
+  const completeRegistration = {
+    email: "ada@example.com",
+    password: "secure-password",
+    firstName: "Ada",
+    lastName: "Doe",
+    username: "ada_doe",
+    countryCode: "NG",
+    phoneCountryCode: "+234",
+    phoneNumber: "8012345678",
+    studyStage: "step2ck" as const,
+    acceptedTerms: "on",
+  };
+
   it("normalises an account email", () => {
     expect(
       authCredentialsSchema.parse({
@@ -34,6 +47,21 @@ describe("authentication validation", () => {
         phoneCountryCode: "+234",
         phoneNumber: "8012345678",
         studyStage: "step2ck",
+      }).success,
+    ).toBe(false);
+  });
+
+  it.each([
+    "username",
+    "email",
+    "firstName",
+    "lastName",
+    "phoneNumber",
+  ] as const)("requires %s during student registration", (field) => {
+    expect(
+      studentRegistrationSchema.safeParse({
+        ...completeRegistration,
+        [field]: "",
       }).success,
     ).toBe(false);
   });
