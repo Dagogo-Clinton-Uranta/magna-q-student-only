@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOnboardedProfile } from "@/lib/auth/guards";
+import { ChatMessage, ChatRoom, connectChatDatabase } from "@/lib/chat/db";
 import {
   residencyIdSchema,
   residencyNotesSchema,
@@ -17,6 +18,7 @@ import {
 export async function updateStudentProfile(formData: FormData) {
   const profile = await requireOnboardedProfile();
   const parsed = editableStudentDetailsSchema.safeParse({
+    username: formData.get("username"),
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     countryCode: formData.get("countryCode"),
@@ -31,9 +33,22 @@ export async function updateStudentProfile(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const { data: usernameAvailable, error: usernameError } = await supabase.rpc(
+    "username_available_for_current_user",
+    { candidate: parsed.data.username },
+  );
+  if (usernameError || usernameAvailable !== true) {
+    redirect(
+      usernameError
+        ? "/profile?error=We+could+not+check+that+username.+Please+try+again."
+        : "/profile?error=That+username+is+already+taken.+Please+choose+another.",
+    );
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({
+      username: parsed.data.username,
       first_name: parsed.data.firstName,
       last_name: parsed.data.lastName,
       full_name: `${parsed.data.firstName} ${parsed.data.lastName}`,
@@ -46,10 +61,43 @@ export async function updateStudentProfile(formData: FormData) {
     .eq("id", profile.id);
 
   if (error) {
-    redirect("/profile?error=We+could+not+save+your+profile+changes.");
+    redirect(
+      error.code === "23505"
+        ? "/profile?error=That+username+is+already+taken.+Please+choose+another."
+        : "/profile?error=We+could+not+save+your+profile+changes.",
+    );
+  }
+
+  if (parsed.data.username !== profile.username && process.env.MONGODB_URI) {
+    try {
+      await connectChatDatabase();
+      await Promise.all([
+        ChatMessage.updateMany(
+          { senderId: profile.id },
+          { $set: { senderName: parsed.data.username } },
+        ),
+        ChatRoom.updateMany(
+          { createdBy: profile.id },
+          { $set: { creatorUsername: parsed.data.username } },
+        ),
+        ChatRoom.updateMany(
+          { "members.userId": profile.id },
+          { $set: { "members.$[member].username": parsed.data.username } },
+          { arrayFilters: [{ "member.userId": profile.id }] },
+        ),
+      ]);
+    } catch (chatError) {
+      console.error(
+        "Could not propagate the updated username to chat.",
+        chatError,
+      );
+    }
   }
 
   revalidatePath("/profile");
+  revalidatePath("/chat-rooms");
+  revalidatePath("/get-featured");
+  revalidatePath("/", "layout");
   redirect("/profile?updated=1");
 }
 

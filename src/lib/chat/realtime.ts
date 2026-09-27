@@ -5,6 +5,8 @@ import { requireRedisUrl } from "@/lib/redis/url";
 
 export type ChatRealtimeEvent =
   | { type: "message:created"; message: ChatMessageDto }
+  | { type: "message:updated"; message: ChatMessageDto }
+  | { type: "message:deleted"; roomSlug: string; messageId: string }
   | { type: "message:status"; message: ChatMessageDto };
 
 const CHAT_REALTIME_STREAM = "chat:realtime:v1";
@@ -59,10 +61,18 @@ function parseEvent(value: string | undefined): ChatRealtimeEvent | null {
   try {
     const parsed = JSON.parse(value) as Partial<ChatRealtimeEvent>;
     if (
-      (parsed.type === "message:created" || parsed.type === "message:status") &&
+      (parsed.type === "message:created" ||
+        parsed.type === "message:updated" ||
+        parsed.type === "message:status") &&
       parsed.message &&
       typeof parsed.message === "object" &&
       typeof parsed.message.roomSlug === "string"
+    )
+      return parsed as ChatRealtimeEvent;
+    if (
+      parsed.type === "message:deleted" &&
+      typeof parsed.roomSlug === "string" &&
+      typeof parsed.messageId === "string"
     )
       return parsed as ChatRealtimeEvent;
   } catch {

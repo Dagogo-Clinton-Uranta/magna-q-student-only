@@ -4,11 +4,13 @@ import { PAYMENTS_ENABLED } from "@/config/features";
 import {
   ChatBan,
   ChatMessage,
+  ChatNotification,
   ChatRoom,
   connectChatDatabase,
   messageDto,
 } from "@/lib/chat/db";
 import { assessMessageRisk } from "@/lib/chat/moderation";
+import { syncChatMentionNotifications } from "@/lib/chat/notifications";
 import { hasCurrentPaidChatAccess } from "@/lib/chat/paid-access";
 import { enqueueChatModeration } from "@/lib/chat/queue";
 import {
@@ -35,6 +37,17 @@ type ClientEvent =
       type: "message:send";
       content?: unknown;
       requestId?: unknown;
+    }
+  | {
+      type: "message:edit";
+      messageId?: unknown;
+      content?: unknown;
+      requestId?: unknown;
+    }
+  | {
+      type: "message:delete";
+      messageId?: unknown;
+      requestId?: unknown;
     };
 
 type ServerEvent =
@@ -44,6 +57,8 @@ type ServerEvent =
       messages: ChatMessageDto[];
     }
   | { type: "message:created"; message: ChatMessageDto }
+  | { type: "message:updated"; message: ChatMessageDto }
+  | { type: "message:deleted"; roomSlug: string; messageId: string }
   | { type: "message:status"; message: ChatMessageDto }
   | { type: "message:accepted"; requestId: string }
   | { type: "error"; message: string; requestId?: string };
@@ -65,7 +80,9 @@ function broadcast(roomSlug: string, event: ServerEvent) {
 }
 
 function relayToLocalSockets(event: ChatRealtimeEvent) {
-  broadcast(event.message.roomSlug, event);
+  const roomSlug =
+    event.type === "message:deleted" ? event.roomSlug : event.message.roomSlug;
+  broadcast(roomSlug, event);
 }
 
 function ensureRealtimeSubscription() {
@@ -96,7 +113,7 @@ async function socketUser(ticket: unknown): Promise<SocketUser | null> {
   if (process.env.DEMO_AUTH_BYPASS === "true" && ticket === "demo")
     return {
       id: "demo-student",
-      name: "Demo Student",
+      name: "demo_student",
       accessExpiresAt: new Date(
         Date.now() + 12 * 60 * 60 * 1_000,
       ).toISOString(),
@@ -228,6 +245,19 @@ async function sendMessage(
     if (requestId) send(socket, { type: "message:accepted", requestId });
 
     if (risk.status === "accepted") {
+      void syncChatMentionNotifications({
+        messageId: message.id,
+        senderId: connection.user.id,
+        senderUsername: connection.user.name,
+        content: message.content,
+        roomSlug: room.slug,
+        roomName: room.name,
+      }).catch((notificationError) =>
+        console.error(
+          "Could not create chat mention notifications.",
+          notificationError,
+        ),
+      );
       const realtimeEvent = {
         type: "message:created" as const,
         message: payload,
@@ -257,10 +287,136 @@ async function sendMessage(
   }
 }
 
+async function editMessage(
+  socket: WebSocket,
+  connection: Connection,
+  event: Extract<ClientEvent, { type: "message:edit" }>,
+) {
+  const requestId =
+    typeof event.requestId === "string" ? event.requestId : undefined;
+  try {
+    if (
+      !connection.user ||
+      !connection.roomSlug ||
+      typeof event.messageId !== "string" ||
+      typeof event.content !== "string"
+    )
+      throw new Error("Invalid message edit.");
+    if (!(await paidChatAccessIsCurrent(connection.user)))
+      throw new Error("Your monthly subscription has expired.");
+
+    const risk = assessMessageRisk(event.content);
+    if (risk.status !== "accepted")
+      throw new Error("The edited message did not pass moderation.");
+
+    await connectChatDatabase();
+    const message = await ChatMessage.findOne({
+      _id: event.messageId,
+      roomSlug: connection.roomSlug,
+      senderId: connection.user.id,
+    });
+    if (!message) throw new Error("You can only edit your own messages.");
+
+    message.content = event.content.trim();
+    message.moderationStatus = risk.status;
+    message.riskScore = risk.score;
+    message.moderationReasons = [...risk.reasons];
+    await message.save();
+    const room = await ChatRoom.findOne({ slug: connection.roomSlug }).lean();
+    if (!room) throw new Error("Chat room not found.");
+
+    const payload = messageDto(message);
+    const realtimeEvent = {
+      type: "message:updated" as const,
+      message: payload,
+    };
+    broadcast(connection.roomSlug, realtimeEvent);
+    void publishChatRealtimeEvent(realtimeEvent, instanceId).catch(
+      (relayError) =>
+        console.error("Could not relay the edited chat message.", relayError),
+    );
+    void syncChatMentionNotifications({
+      messageId: message.id,
+      senderId: connection.user.id,
+      senderUsername: connection.user.name,
+      content: message.content,
+      roomSlug: room.slug,
+      roomName: room.name,
+    }).catch((notificationError) =>
+      console.error(
+        "Could not update chat mention notifications.",
+        notificationError,
+      ),
+    );
+    if (requestId) send(socket, { type: "message:accepted", requestId });
+  } catch (error) {
+    send(socket, {
+      type: "error",
+      message:
+        error instanceof Error ? error.message : "Message could not be edited.",
+      requestId,
+    });
+  }
+}
+
+async function deleteMessage(
+  socket: WebSocket,
+  connection: Connection,
+  event: Extract<ClientEvent, { type: "message:delete" }>,
+) {
+  const requestId =
+    typeof event.requestId === "string" ? event.requestId : undefined;
+  try {
+    if (
+      !connection.user ||
+      !connection.roomSlug ||
+      typeof event.messageId !== "string"
+    )
+      throw new Error("Invalid message deletion.");
+    if (!(await paidChatAccessIsCurrent(connection.user)))
+      throw new Error("Your monthly subscription has expired.");
+
+    await connectChatDatabase();
+    const message = await ChatMessage.findOneAndDelete({
+      _id: event.messageId,
+      roomSlug: connection.roomSlug,
+      senderId: connection.user.id,
+    });
+    if (!message) throw new Error("You can only delete your own messages.");
+    await ChatNotification.deleteMany({ relatedMessageId: message.id });
+
+    const realtimeEvent = {
+      type: "message:deleted" as const,
+      roomSlug: connection.roomSlug,
+      messageId: message.id,
+    };
+    broadcast(connection.roomSlug, realtimeEvent);
+    void publishChatRealtimeEvent(realtimeEvent, instanceId).catch(
+      (relayError) =>
+        console.error("Could not relay the deleted chat message.", relayError),
+    );
+    if (requestId) send(socket, { type: "message:accepted", requestId });
+  } catch (error) {
+    send(socket, {
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Message could not be deleted.",
+      requestId,
+    });
+  }
+}
+
 function parseClientEvent(data: RawData): ClientEvent | null {
   try {
     const value = JSON.parse(data.toString()) as Partial<ClientEvent>;
-    if (value.type === "join" || value.type === "message:send")
+    if (
+      value.type === "join" ||
+      value.type === "message:send" ||
+      value.type === "message:edit" ||
+      value.type === "message:delete"
+    )
       return value as ClientEvent;
   } catch {
     // Invalid frames receive a generic error below.
@@ -292,7 +448,11 @@ export function registerChatWebSocket(socket: WebSocket) {
             error instanceof Error ? error.message : "Could not join room.",
         }),
       );
-    else void sendMessage(socket, connection, event);
+    else if (event.type === "message:send")
+      void sendMessage(socket, connection, event);
+    else if (event.type === "message:edit")
+      void editMessage(socket, connection, event);
+    else void deleteMessage(socket, connection, event);
   });
 
   const unregister = () => {

@@ -33,6 +33,7 @@ type Message = {
   riskScore: number;
   moderationReasons: string[];
   createdAt: Date;
+  updatedAt: Date;
 };
 type Ban = {
   roomSlug: string;
@@ -48,7 +49,8 @@ export type NotificationType =
   | "private_group_deleted"
   | "private_group_member_added"
   | "feature_pulse"
-  | "feature_comment";
+  | "feature_comment"
+  | "chat_mention";
 export type Notification = {
   recipientId: string;
   type: NotificationType;
@@ -57,6 +59,7 @@ export type Notification = {
   href: string;
   relatedGroupId?: string;
   relatedFeatureId?: string;
+  relatedMessageId?: string;
   readAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -143,6 +146,7 @@ const NotificationSchema = new Schema<Notification>(
         "private_group_member_added",
         "feature_pulse",
         "feature_comment",
+        "chat_mention",
       ],
     },
     title: { type: String, required: true },
@@ -150,11 +154,19 @@ const NotificationSchema = new Schema<Notification>(
     href: { type: String, required: true },
     relatedGroupId: String,
     relatedFeatureId: String,
+    relatedMessageId: { type: String, index: true },
     readAt: Date,
   },
   { timestamps: true },
 );
 NotificationSchema.index({ recipientId: 1, readAt: 1, createdAt: -1 });
+NotificationSchema.index(
+  { recipientId: 1, relatedMessageId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { type: "chat_mention" },
+  },
+);
 
 export const ChatRoom: Model<Room> =
   mongoose.models.ChatRoom || mongoose.model<Room>("ChatRoom", RoomSchema);
@@ -187,5 +199,9 @@ export function messageDto(
     content: message.content,
     moderationStatus: message.moderationStatus,
     createdAt: message.createdAt.toISOString(),
+    editedAt:
+      message.updatedAt.getTime() > message.createdAt.getTime()
+        ? message.updatedAt.toISOString()
+        : undefined,
   };
 }

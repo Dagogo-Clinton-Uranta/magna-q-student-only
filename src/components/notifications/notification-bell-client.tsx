@@ -19,7 +19,27 @@ export function NotificationBellClient({
   unreadCount: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [liveUnreadCount, setLiveUnreadCount] = useState(unreadCount);
   const container = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setLiveUnreadCount(unreadCount);
+  }, [unreadCount]);
+
+  useEffect(() => {
+    function incrementForChatMention() {
+      setLiveUnreadCount((count) => count + 1);
+    }
+    window.addEventListener(
+      "chat-mention-notification",
+      incrementForChatMention,
+    );
+    return () =>
+      window.removeEventListener(
+        "chat-mention-notification",
+        incrementForChatMention,
+      );
+  }, []);
 
   useEffect(() => {
     function dismiss(event: MouseEvent) {
@@ -35,7 +55,7 @@ export function NotificationBellClient({
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="relative grid h-10 w-10 place-items-center border border-line bg-white text-ink hover:bg-soft"
-        aria-label={`${unreadCount} unread notifications`}
+        aria-label={`${liveUnreadCount} unread notifications`}
         aria-expanded={open}
       >
         <svg
@@ -50,9 +70,9 @@ export function NotificationBellClient({
             strokeLinejoin="round"
           />
         </svg>
-        {unreadCount > 0 && (
+        {liveUnreadCount > 0 && (
           <span className="absolute -right-2 -top-2 grid min-h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-            {unreadCount > 99 ? "99+" : unreadCount}
+            {liveUnreadCount > 99 ? "99+" : liveUnreadCount}
           </span>
         )}
       </button>

@@ -8,6 +8,7 @@ export type ChatMessageDto = {
   content: string;
   moderationStatus: ModerationStatus;
   createdAt: string;
+  editedAt?: string;
 };
 
 export const INITIAL_CHAT_ROOMS = [

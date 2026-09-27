@@ -22,6 +22,8 @@ type Room = {
 type ServerEvent =
   | { type: "joined"; room: Room; messages: ChatMessageDto[] }
   | { type: "message:created"; message: ChatMessageDto }
+  | { type: "message:updated"; message: ChatMessageDto }
+  | { type: "message:deleted"; roomSlug: string; messageId: string }
   | { type: "message:status"; message: ChatMessageDto }
   | { type: "message:accepted"; requestId: string }
   | { type: "error"; message: string; requestId?: string };
@@ -29,20 +31,36 @@ type ServerEvent =
 export function ChatRoomClient({
   rooms,
   currentUserId,
+  currentUsername,
+  initialRoom,
   socketAuthTicket,
 }: {
   rooms: Room[];
   currentUserId: string;
+  currentUsername: string;
+  initialRoom?: string;
   socketAuthTicket: string;
 }) {
   const [active, setActive] = useState(
-    rooms.find((room) => room.status === "approved")?.slug || "",
+    rooms.some(
+      (room) => room.status === "approved" && room.slug === initialRoom,
+    )
+      ? initialRoom!
+      : rooms.find((room) => room.status === "approved")?.slug || "",
   );
   const [messages, setMessages] = useState<ChatMessageDto[]>([]);
   const [topic, setTopic] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionRange, setMentionRange] = useState<[number, number] | null>(
+    null,
+  );
+  const [mentionSuggestions, setMentionSuggestions] = useState<string[]>([]);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
   const socket = useRef<WebSocket | null>(null);
+  const textarea = useRef<HTMLTextAreaElement | null>(null);
   const pendingMessages = useRef(new Map<string, string>());
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -93,6 +111,14 @@ export function ChatRoomClient({
         }
         if (event.type === "message:created") {
           if (event.message.roomSlug !== activeRef.current) return;
+          if (
+            event.message.senderId !== currentUserId &&
+            new RegExp(`(^|\\s)@${currentUsername}(?=\\b)`, "i").test(
+              event.message.content,
+            )
+          ) {
+            window.dispatchEvent(new Event("chat-mention-notification"));
+          }
           setMessages((items) =>
             items.some((item) => item.id === event.message.id)
               ? items.map((item) =>
@@ -100,6 +126,27 @@ export function ChatRoomClient({
                 )
               : [...items, event.message],
           );
+          return;
+        }
+        if (event.type === "message:updated") {
+          if (event.message.roomSlug !== activeRef.current) return;
+          setMessages((items) =>
+            items.map((item) =>
+              item.id === event.message.id ? event.message : item,
+            ),
+          );
+          return;
+        }
+        if (event.type === "message:deleted") {
+          if (event.roomSlug !== activeRef.current) return;
+          setMessages((items) =>
+            items.filter((item) => item.id !== event.messageId),
+          );
+          setEditingMessageId((current) => {
+            if (current !== event.messageId) return current;
+            setEditingContent("");
+            return null;
+          });
           return;
         }
         if (event.type === "message:status") {
@@ -144,6 +191,93 @@ export function ChatRoomClient({
     };
   }, [joinRoom]);
 
+  useEffect(() => {
+    if (mentionQuery === null) {
+      setMentionSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/chat/mentions?q=${encodeURIComponent(mentionQuery)}`,
+          { cache: "no-store", signal: controller.signal },
+        );
+        const result = (await response.json()) as { suggestions?: string[] };
+        if (response.ok) setMentionSuggestions(result.suggestions ?? []);
+      } catch (mentionError) {
+        if (!(
+          mentionError instanceof DOMException &&
+          mentionError.name === "AbortError"
+        )) {
+          setMentionSuggestions([]);
+        }
+      }
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [mentionQuery]);
+
+  function updateContent(nextContent: string, cursor: number) {
+    setContent(nextContent);
+    const match = nextContent.slice(0, cursor).match(/(?:^|\s)@([a-z0-9_]*)$/i);
+    if (!match) {
+      setMentionQuery(null);
+      setMentionRange(null);
+      return;
+    }
+    const query = match[1] ?? "";
+    setMentionQuery(query.toLowerCase());
+    setMentionRange([cursor - query.length - 1, cursor]);
+  }
+
+  function selectMention(username: string) {
+    if (!mentionRange) return;
+    const [start, end] = mentionRange;
+    const nextContent = `${content.slice(0, start)}@${username} ${content.slice(end)}`;
+    const nextCursor = start + username.length + 2;
+    setContent(nextContent);
+    setMentionQuery(null);
+    setMentionRange(null);
+    setMentionSuggestions([]);
+    requestAnimationFrame(() => {
+      textarea.current?.focus();
+      textarea.current?.setSelectionRange(nextCursor, nextCursor);
+    });
+  }
+
+  function formatSelectedLines(kind: "header" | "bullet") {
+    const input = textarea.current;
+    if (!input) return;
+    const lineStart = content.lastIndexOf("\n", input.selectionStart - 1) + 1;
+    const nextBreak = content.indexOf("\n", input.selectionEnd);
+    const lineEnd = nextBreak === -1 ? content.length : nextBreak;
+    const selected = content.slice(lineStart, lineEnd);
+    const prefix = kind === "header" ? "## " : "- ";
+    const prefixPattern = kind === "header" ? /^#{1,3}\s+/ : /^[-*]\s+/;
+    const lines = selected.split("\n");
+    const allFormatted = lines.every((line) => prefixPattern.test(line));
+    const formatted = lines
+      .map((line) =>
+        allFormatted
+          ? line.replace(prefixPattern, "")
+          : `${prefix}${line.replace(prefixPattern, "")}`,
+      )
+      .join("\n");
+    const nextContent = `${content.slice(0, lineStart)}${formatted}${content.slice(lineEnd)}`;
+    setContent(nextContent);
+    setMentionQuery(null);
+    setMentionRange(null);
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(lineStart, lineStart + formatted.length);
+    });
+  }
+
   function changeRoom(slug: string) {
     if (slug === active) return;
     activeRef.current = slug;
@@ -152,6 +286,48 @@ export function ChatRoomClient({
     setTopic(null);
     if (socket.current) joinRoom(socket.current, slug);
   }
+  function editMessage(message: ChatMessageDto) {
+    setEditingMessageId(message.id);
+    setEditingContent(message.content);
+  }
+
+  function saveEditedMessage(event: React.FormEvent) {
+    event.preventDefault();
+    if (
+      !editingMessageId ||
+      !editingContent.trim() ||
+      !socket.current ||
+      socket.current.readyState !== WebSocket.OPEN
+    )
+      return;
+    socket.current.send(
+      JSON.stringify({
+        type: "message:edit",
+        messageId: editingMessageId,
+        content: editingContent,
+        requestId: crypto.randomUUID(),
+      }),
+    );
+    setEditingMessageId(null);
+    setEditingContent("");
+  }
+
+  function deleteMessage(messageId: string) {
+    if (
+      !window.confirm("Delete this message permanently?") ||
+      !socket.current ||
+      socket.current.readyState !== WebSocket.OPEN
+    )
+      return;
+    socket.current.send(
+      JSON.stringify({
+        type: "message:delete",
+        messageId,
+        requestId: crypto.randomUUID(),
+      }),
+    );
+  }
+
   function send(event: React.FormEvent) {
     event.preventDefault();
     if (
@@ -318,9 +494,39 @@ export function ChatRoomClient({
                   ? "You"
                   : message.senderName}
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm">
-                {message.content}
-              </p>
+              {editingMessageId === message.id ? (
+                <form onSubmit={saveEditedMessage} className="mt-2 space-y-2">
+                  <textarea
+                    rows={5}
+                    value={editingContent}
+                    onChange={(event) => setEditingContent(event.target.value)}
+                    maxLength={2000}
+                    autoFocus
+                    aria-label="Edit chat message"
+                    className="w-full resize-y rounded border border-blue-300 bg-white px-3 py-2 text-sm text-slate-900"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="rounded bg-white px-3 py-1.5 text-xs font-bold text-blue-900"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingMessageId(null);
+                        setEditingContent("");
+                      }}
+                      className="rounded border border-current px-3 py-1.5 text-xs font-bold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <ChatMessageContent content={message.content} />
+              )}
               <div className="mt-2 flex items-center gap-2 text-xs opacity-80">
                 <time dateTime={message.createdAt}>
                   {new Date(message.createdAt).toLocaleString([], {
@@ -331,6 +537,30 @@ export function ChatRoomClient({
                     minute: "2-digit",
                   })}
                 </time>
+                {message.editedAt && <span>(edited)</span>}
+                {message.senderId === currentUserId &&
+                  editingMessageId !== message.id && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => editMessage(message)}
+                        aria-label="Edit message"
+                        title="Edit message"
+                        className="rounded p-1 hover:bg-black/10"
+                      >
+                        <EditIcon />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteMessage(message.id)}
+                        aria-label="Delete message"
+                        title="Delete message"
+                        className="rounded p-1 hover:bg-red-500/20"
+                      >
+                        <DeleteIcon />
+                      </button>
+                    </>
+                  )}
                 {message.moderationStatus === "pending" && (
                   <span
                     title="This message is under moderation"
@@ -349,21 +579,163 @@ export function ChatRoomClient({
           ))}
         </div>
         {error && <p className="px-4 pt-3 text-sm text-red-700">{error}</p>}
-        <form
-          onSubmit={send}
-          className="flex gap-2 border-t border-slate-200 p-3"
-        >
-          <input
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            maxLength={2000}
-            aria-label="Chat message"
-            placeholder="Write a message…"
-            className="min-h-11 flex-1 rounded-lg border border-slate-300 px-3"
-          />
-          <button className="button-primary min-h-11 px-5">Send</button>
+        <form onSubmit={send} className="border-t border-slate-200 p-3">
+          <div
+            className="mb-2 flex gap-2"
+            role="toolbar"
+            aria-label="Message formatting"
+          >
+            <button
+              type="button"
+              onClick={() => formatSelectedLines("header")}
+              className="rounded border border-slate-300 px-3 py-1.5 text-sm font-bold hover:bg-slate-100"
+              title="Format selected lines as headings"
+            >
+              Header
+            </button>
+            <button
+              type="button"
+              onClick={() => formatSelectedLines("bullet")}
+              className="rounded border border-slate-300 px-3 py-1.5 text-sm font-bold hover:bg-slate-100"
+              title="Format selected lines as bullet points"
+            >
+              • Bullets
+            </button>
+          </div>
+          <div className="relative flex items-end gap-2">
+            <textarea
+              ref={textarea}
+              rows={5}
+              value={content}
+              onChange={(event) =>
+                updateContent(event.target.value, event.target.selectionStart)
+              }
+              onClick={(event) =>
+                updateContent(
+                  event.currentTarget.value,
+                  event.currentTarget.selectionStart,
+                )
+              }
+              maxLength={2000}
+              aria-label="Chat message"
+              aria-autocomplete="list"
+              aria-controls="chat-mention-suggestions"
+              placeholder="Write a message… Type @ to mention someone."
+              className="min-h-32 flex-1 resize-y rounded-lg border border-slate-300 px-3 py-2"
+            />
+            {mentionQuery !== null && mentionSuggestions.length > 0 && (
+              <ul
+                id="chat-mention-suggestions"
+                className="absolute bottom-full left-0 z-20 mb-2 max-h-56 w-full max-w-sm overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+              >
+                {mentionSuggestions.map((username) => (
+                  <li key={username}>
+                    <button
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => selectMention(username)}
+                      className="w-full rounded px-3 py-2 text-left text-sm hover:bg-blue-50"
+                    >
+                      @{username}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button className="button-primary min-h-11 px-5">Send</button>
+          </div>
         </form>
       </section>
     </div>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      className="h-4 w-4 fill-none stroke-current"
+      strokeWidth="1.7"
+    >
+      <path
+        d="m4 14.5-.5 2 2-.5L15 6.5 13.5 5 4 14.5Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="m12.5 6 1.5 1.5" />
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      className="h-4 w-4 fill-none stroke-current"
+      strokeWidth="1.7"
+    >
+      <path
+        d="M4 6h12M8 3h4l1 3H7l1-3ZM6 6l.7 11h6.6L14 6M8.5 9v5M11.5 9v5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ChatMessageContent({ content }: { content: string }) {
+  const blocks: React.ReactNode[] = [];
+  const lines = content.split("\n");
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index] ?? "";
+    if (/^#{1,3}\s+/.test(line)) {
+      blocks.push(
+        <h3 key={index} className="mt-2 text-base font-bold first:mt-1">
+          {renderMentions(line.replace(/^#{1,3}\s+/, ""))}
+        </h3>,
+      );
+      index += 1;
+      continue;
+    }
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = [];
+      const start = index;
+      while (index < lines.length && /^[-*]\s+/.test(lines[index] ?? "")) {
+        items.push((lines[index] ?? "").replace(/^[-*]\s+/, ""));
+        index += 1;
+      }
+      blocks.push(
+        <ul key={start} className="my-1 list-disc space-y-1 pl-5 text-sm">
+          {items.map((item, itemIndex) => (
+            <li key={itemIndex}>{renderMentions(item)}</li>
+          ))}
+        </ul>,
+      );
+      continue;
+    }
+    blocks.push(
+      <p key={index} className="min-h-[1em] whitespace-pre-wrap text-sm">
+        {renderMentions(line)}
+      </p>,
+    );
+    index += 1;
+  }
+
+  return <div className="mt-1">{blocks}</div>;
+}
+
+function renderMentions(text: string) {
+  return text.split(/(@[a-z0-9_]{3,24})/gi).map((part, index) =>
+    /^@[a-z0-9_]{3,24}$/i.test(part) ? (
+      <strong key={index} className="decoration-current/40 font-bold underline">
+        {part}
+      </strong>
+    ) : (
+      part
+    ),
   );
 }

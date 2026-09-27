@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UsernameInput } from "@/components/auth/username-input";
 import { AppShell } from "@/components/layout/app-shell";
 import { WorkspaceHero } from "@/components/layout/workspace-hero";
 import { StageRankSelector } from "@/components/profile/stage-rank-selector";
@@ -108,8 +109,8 @@ export default async function ProfilePage({
         <p className="eyebrow">Account information</p>
         <h2 className="mt-2 text-2xl">Student details</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Your email address and username identify your account and cannot be
-          changed here. You can update the other signup details below.
+          Your username is public in chat rooms and the Feature Me section.
+          Usernames must be unique. Your email address cannot be changed here.
         </p>
 
         <form
@@ -138,14 +139,9 @@ export default async function ProfilePage({
               className="input"
             />
           </ProfileField>
-          <ProfileField label="Username">
-            <input
-              value={details.username}
-              readOnly
-              aria-readonly="true"
-              className="input cursor-not-allowed bg-slate-100 text-muted"
-            />
-          </ProfileField>
+          <div>
+            <UsernameInput defaultValue={details.username} allowCurrent />
+          </div>
           <ProfileField label="Email address">
             <input
               type="email"

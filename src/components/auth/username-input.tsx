@@ -2,7 +2,13 @@
 
 import { useRef, useState } from "react";
 
-export function UsernameInput() {
+export function UsernameInput({
+  defaultValue,
+  allowCurrent = false,
+}: {
+  defaultValue?: string;
+  allowCurrent?: boolean;
+} = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const requestNumber = useRef(0);
   const [message, setMessage] = useState("");
@@ -25,7 +31,7 @@ export function UsernameInput() {
     setMessage("Checking availability…");
     try {
       const response = await fetch(
-        `/api/auth/username-availability?username=${encodeURIComponent(username)}`,
+        `/api/auth/username-availability?username=${encodeURIComponent(username)}${allowCurrent ? "&allowCurrent=1" : ""}`,
         { cache: "no-store" },
       );
       const result = (await response.json()) as {
@@ -57,6 +63,7 @@ export function UsernameInput() {
       <input
         ref={inputRef}
         name="username"
+        defaultValue={defaultValue}
         required
         minLength={3}
         maxLength={24}

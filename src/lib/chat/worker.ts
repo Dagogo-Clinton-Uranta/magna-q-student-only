@@ -1,4 +1,10 @@
-import { ChatMessage, connectChatDatabase, messageDto } from "@/lib/chat/db";
+import {
+  ChatMessage,
+  ChatRoom,
+  connectChatDatabase,
+  messageDto,
+} from "@/lib/chat/db";
+import { syncChatMentionNotifications } from "@/lib/chat/notifications";
 import {
   CHAT_MODERATION_QUEUE,
   type ChatModerationJob,
@@ -59,11 +65,22 @@ export async function startChatModerationWorker() {
         type: "message:status",
         message: payload,
       });
-      if (payload.moderationStatus === "accepted")
+      if (payload.moderationStatus === "accepted") {
         await publishChatRealtimeEvent({
           type: "message:created",
           message: payload,
         });
+        const room = await ChatRoom.findOne({ slug: message.roomSlug }).lean();
+        if (room)
+          await syncChatMentionNotifications({
+            messageId: message.id,
+            senderId: message.senderId,
+            senderUsername: message.senderName,
+            content: message.content,
+            roomSlug: room.slug,
+            roomName: room.name,
+          });
+      }
     },
     { connection, concurrency: 3 },
   );

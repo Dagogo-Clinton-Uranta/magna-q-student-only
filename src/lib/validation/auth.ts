@@ -53,9 +53,9 @@ export const editableStudentProfileSchema = studentProfileSchema.omit({
   acceptedTerms: true,
 });
 
-export const editableStudentDetailsSchema = editableStudentProfileSchema.omit({
-  studyStage: true,
-});
+export const editableStudentDetailsSchema = editableStudentProfileSchema
+  .omit({ studyStage: true })
+  .extend({ username: usernameSchema });
 
 export const studyStageChangeSchema = z.object({
   studyStage: studentProfileSchema.shape.studyStage,

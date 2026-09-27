@@ -17,6 +17,7 @@ export default async function ChatRoomsPage({
     memberError?: string;
     left?: string;
     closed?: string;
+    room?: string;
   }>;
 }) {
   const { profile, entitlement } = await requirePaidStudent("/chat-rooms");
@@ -25,7 +26,7 @@ export default async function ChatRoomsPage({
     ? "demo"
     : await issueSocketAuthentication({
         id: profile.id,
-        name: profile.fullName,
+        name: profile.username,
         accessExpiresAt:
           entitlement.currentPeriodEnd ?? new Date().toISOString(),
       });
@@ -81,11 +82,20 @@ export default async function ChatRoomsPage({
   }
   return (
     <AppShell title="Chat rooms" name={profile.fullName}>
-      <p className="mt-3 max-w-3xl leading-7 text-slate-700">
-        Get help from other students who’ve taken the exams, or get
-        clarifications on exam registrations etc. Please be respectful in the
-        chat rooms, profanities will get you banned, thank you.
-      </p>
+      <div className="mt-3 max-w-3xl leading-7 text-slate-700">
+        <p>
+          Get help from other students who’ve taken the exams, or get
+          clarifications on exam registrations etc. Please be respectful in the
+          chat rooms, profanities will get you banned, thank you.
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>Please type @ to get a suggestion of usernames.</li>
+          <li>
+            Attachments and images cannot be sent for now. Please give feedback
+            if you would like that.
+          </li>
+        </ul>
+      </div>
       {(params.submitted ||
         params.memberAdded ||
         params.left ||
@@ -114,6 +124,8 @@ export default async function ChatRoomsPage({
       <ChatRoomClient
         rooms={rooms}
         currentUserId={profile.id}
+        currentUsername={profile.username}
+        initialRoom={params.room}
         socketAuthTicket={socketAuthTicket}
       />
     </AppShell>
