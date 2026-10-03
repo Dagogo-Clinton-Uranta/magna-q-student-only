@@ -7,6 +7,7 @@ import {
   releaseSignupSlot,
   reserveSignupSlot,
 } from "@/lib/auth/signup-ip-limit";
+import { parseCaptchaToken } from "@/lib/auth/turnstile";
 import { logEvent } from "@/lib/logging/logger";
 import {
   LOCALE_COOKIE_NAME,
@@ -24,13 +25,9 @@ function authError(message: string, mode: "login" | "signup"): never {
 }
 
 function captchaToken(formData: FormData, mode: "login" | "signup") {
-  if (!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim()) return undefined;
-
-  const token = formData.get("cf-turnstile-response");
-  if (typeof token !== "string" || token.length === 0 || token.length > 2048) {
-    authError("Complete the human verification and try again.", mode);
-  }
-  return token;
+  const parsed = parseCaptchaToken(formData);
+  if (parsed.required && parsed.error) authError(parsed.error, mode);
+  return parsed.token;
 }
 
 function isCaptchaError(error: { code?: string } | null) {

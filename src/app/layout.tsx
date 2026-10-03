@@ -5,6 +5,7 @@ import { SiteTranslator } from "@/components/i18n/site-translator";
 import { ConditionalSiteFooter } from "@/components/layout/site-footer";
 import { ContentProtection } from "@/components/security/content-protection";
 import { ThemeRouteController } from "@/components/settings/theme-route-controller";
+import { getSiteAnnouncement } from "@/lib/announcements";
 import { getCurrentProfile } from "@/lib/auth/guards";
 import { getRequestLocale } from "@/lib/i18n/request";
 import "./globals.css";
@@ -21,7 +22,10 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   // The profile is authoritative across devices; browser preferences provide
   // a useful default for visitors and users who have not chosen a language.
-  const profile = await getCurrentProfile();
+  const [profile, announcement] = await Promise.all([
+    getCurrentProfile(),
+    getSiteAnnouncement(),
+  ]);
   const locale = profile?.preferredLocale ?? (await getRequestLocale());
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -34,7 +38,7 @@ export default async function RootLayout({
       </head>
       <body>
         <I18nProvider initialLocale={locale}>
-          <AnnouncementBanner />
+          {announcement ? <AnnouncementBanner message={announcement} /> : null}
           <ThemeRouteController />
           <ContentProtection>{children}</ContentProtection>
           <ConditionalSiteFooter />

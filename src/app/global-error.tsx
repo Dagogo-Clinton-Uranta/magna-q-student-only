@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { ErrorScreen } from "@/components/errors/error-screen";
-import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 
 export default function GlobalError({
   error,
@@ -24,7 +23,6 @@ export default function GlobalError({
         />
       </head>
       <body>
-        <AnnouncementBanner />
         <ErrorScreen
           eyebrow="Magna-Q is temporarily unavailable"
           title="We couldn’t open this page."

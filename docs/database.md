@@ -43,4 +43,11 @@ shared teaching content managed outside this portal.
 
 Do not reorder or edit an applied migration. Add a forward migration for production changes. Back up the target project before `supabase db push`, review the generated diff, then run the deployment smoke checks.
 
+The global website banner is stored in the singleton `site_announcements` row
+whose ID is `primary`. Anonymous and signed-in users can read it only while it
+is enabled. An authenticated administrator from the shared admin application
+can update its `message` and `enabled` fields through Supabase; RLS checks the
+administrator's role in `profiles`. The service role can also manage the row
+for trusted server-side workflows.
+
 Use `EXPLAIN (ANALYZE, BUFFERS)` on `eligible_question_ids` with production-like cardinalities. It should use the question exam/status index and reverse mapping indexes. The initial sampler hashes only a bounded candidate pool; replace that strategy if production plans show unacceptable offset cost or distribution.
