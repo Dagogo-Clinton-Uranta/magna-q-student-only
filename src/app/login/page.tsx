@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth/guards";
 import { DEMO_AUTH_BYPASS_ENABLED } from "@/lib/auth/demo";
 import { PasswordInput } from "@/components/auth/password-input";
+import { SignupSourceFields } from "@/components/auth/signup-source-fields";
 import { TurnstileWidget } from "@/components/auth/turnstile-widget";
 import { UsernameInput } from "@/components/auth/username-input";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
@@ -251,6 +252,7 @@ export default async function LoginPage({
                       className="input"
                     />
                   </label>
+                  <SignupSourceFields />
                   <label className="flex gap-3 border border-line bg-field p-4 text-sm sm:col-span-2">
                     <input
                       name="acceptedTerms"

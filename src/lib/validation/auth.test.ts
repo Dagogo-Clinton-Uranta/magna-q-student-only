@@ -18,6 +18,7 @@ describe("authentication validation", () => {
     phoneCountryCode: "+234",
     phoneNumber: "8012345678",
     studyStage: "step2ck" as const,
+    signupSource: "google" as const,
     acceptedTerms: "on",
   };
 
@@ -79,6 +80,7 @@ describe("authentication validation", () => {
       medicalSchool: "",
       trainingLevel: "Medical graduate",
       studyStage: "residency_interviews",
+      signupSource: "word_of_mouth",
       acceptedTerms: "on",
     });
 
@@ -90,7 +92,33 @@ describe("authentication validation", () => {
       countryCode: "NG",
       phoneNumber: "08012345678",
       studyStage: "residency_interviews",
+      signupSource: "word_of_mouth",
     });
+  });
+
+  it("requires a supported signup source", () => {
+    expect(
+      studentRegistrationSchema.safeParse({
+        ...completeRegistration,
+        signupSource: "newspaper",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("requires details when the signup source is other", () => {
+    expect(
+      studentRegistrationSchema.safeParse({
+        ...completeRegistration,
+        signupSource: "other",
+      }).success,
+    ).toBe(false);
+    expect(
+      studentRegistrationSchema.safeParse({
+        ...completeRegistration,
+        signupSource: "other",
+        signupSourceOther: "University conference",
+      }).success,
+    ).toBe(true);
   });
 
   it("rejects usernames containing spaces or punctuation", () => {

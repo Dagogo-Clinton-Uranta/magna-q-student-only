@@ -93,11 +93,13 @@ export async function signUpWithPassword(formData: FormData) {
     medicalSchool: formData.get("medicalSchool") || undefined,
     trainingLevel: formData.get("trainingLevel") || undefined,
     studyStage: formData.get("studyStage"),
+    signupSource: formData.get("signupSource"),
+    signupSourceOther: formData.get("signupSourceOther") || undefined,
     acceptedTerms: formData.get("acceptedTerms"),
   });
   if (!registration.success) {
     authError(
-      "Complete all required fields, including username, email, first name, last name, and phone number, then accept the terms.",
+      "Complete all required fields, including how you heard about us, then accept the terms.",
       "signup",
     );
   }
@@ -186,6 +188,11 @@ export async function signUpWithPassword(formData: FormData) {
         medical_school: credentials.medicalSchool || null,
         training_level: credentials.trainingLevel || null,
         study_stage: credentials.studyStage,
+        signup_source: credentials.signupSource,
+        signup_source_other:
+          credentials.signupSource === "other"
+            ? credentials.signupSourceOther
+            : null,
         // Residency-interview students keep Step 2 CK as the question-bank
         // default while their real journey stage remains separately recorded.
         target_exam: targetExam,

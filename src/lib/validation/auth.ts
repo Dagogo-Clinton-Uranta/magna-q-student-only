@@ -42,9 +42,33 @@ export const authCredentialsSchema = z.object({
   password: z.string().min(8).max(72),
 });
 
-export const studentRegistrationSchema = authCredentialsSchema.extend(
-  studentProfileSchema.shape,
-);
+export const signupSourceSchema = z.enum([
+  "twitter",
+  "google",
+  "word_of_mouth",
+  "instagram",
+  "magna_q_agent",
+  "other",
+]);
+
+export const studentRegistrationSchema = authCredentialsSchema
+  .extend({
+    ...studentProfileSchema.shape,
+    signupSource: signupSourceSchema,
+    signupSourceOther: z.string().trim().max(120).optional(),
+  })
+  .superRefine((registration, context) => {
+    if (
+      registration.signupSource === "other" &&
+      !registration.signupSourceOther
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["signupSourceOther"],
+        message: "Tell us how you heard about Magna-Q.",
+      });
+    }
+  });
 
 export const onboardingSchema = studentProfileSchema;
 
