@@ -1,5 +1,11 @@
 import React from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QuestionPlayer } from "./question-player";
 
@@ -75,5 +81,28 @@ describe("QuestionPlayer navigation and feedback", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(confirm).not.toHaveBeenCalled();
     confirm.mockRestore();
+  });
+
+  it("opens the laboratory reference drawer from the question toolbar", async () => {
+    render(<QuestionPlayer initial={answeredQuestion} initialNote="" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Lab values" }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Laboratory values" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Serum" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Gases" })).toBeTruthy();
+    expect(
+      screen.getByRole("tab", { name: "Cerebrospinal fluid" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Hematologic" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Urine" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "BMI" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Gases" }));
+    expect(screen.getByText("75–105 mm Hg")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

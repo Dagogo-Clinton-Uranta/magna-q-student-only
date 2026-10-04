@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { formatClock } from "@/lib/time/block-timer";
 import { getPageWindow } from "@/lib/pagination";
 import { PlayerUtilities } from "@/components/study/player-utilities";
+import { LabValuesDrawer } from "@/components/study/lab-values-drawer";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   normalizeHighlights,
@@ -69,6 +70,7 @@ export function QuestionPlayer({
   const [noteStatus, setNoteStatus] = useState("");
   const [struck, setStruck] = useState<string[]>([]);
   const [keyInfoVisible, setKeyInfoVisible] = useState(false);
+  const [labValuesOpen, setLabValuesOpen] = useState(false);
   const [highlights, setHighlights] = useState<TextHighlight[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiStatus, setAiStatus] = useState<
@@ -101,6 +103,7 @@ export function QuestionPlayer({
       setNoteStatus("");
       setStruck([]);
       setKeyInfoVisible(false);
+      setLabValuesOpen(false);
       setAiOpen(false);
       setAiStatus("idle");
       setAiText("");
@@ -463,6 +466,11 @@ export function QuestionPlayer({
                 label="Key info"
               />
               <ActionButton
+                active={labValuesOpen}
+                onClick={() => setLabValuesOpen(true)}
+                label="Lab values"
+              />
+              <ActionButton
                 active={aiOpen}
                 onClick={() => void requestAiAssist()}
                 label="AI assist"
@@ -785,6 +793,10 @@ export function QuestionPlayer({
           </div>
         </div>
       )}
+      <LabValuesDrawer
+        open={labValuesOpen}
+        onClose={() => setLabValuesOpen(false)}
+      />
     </div>
   );
 }
